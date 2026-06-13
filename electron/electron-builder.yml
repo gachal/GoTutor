@@ -1,0 +1,64 @@
+# electron-builder config — produces per-OS installers bundling the
+# Vue SPA + Electron + Go backend binary.
+#
+# Build flow (per platform):
+#   1. `make backend-build-<os>-<arch>` cross-compiles the Go binary to
+#      backend/bin/<os>-<arch>/gotutor-backend
+#   2. `pnpm --dir frontend build` produces frontend/dist/
+#   3. `pnpm --dir electron build` compiles TS → electron/dist/
+#   4. `pnpm --dir electron package` runs electron-builder which:
+#        - copies frontend/dist/ and electron/dist/ into the app
+#        - copies the matching backend binary into Resources/backend/
+#        - bundles Electron itself and produces a dmg/exe/AppImage
+#
+# At runtime the Electron main process finds the binary at
+# process.resourcesPath/backend/<name> (see backend.ts).
+
+appId: dev.teahouse.gotutor
+productName: GoTutor
+copyright: Copyright © 2026 TeaHouse
+
+# Relative to electron/ — both must already exist when electron-builder runs.
+directories:
+  output: ../release
+  buildResources: build
+
+# What goes into the app bundle. electron/dist (compiled TS) and
+# frontend/dist (built SPA) are required.
+files:
+  - dist/**
+  - ../frontend/dist/**
+
+# Go backend ships as a sidecar. The `${os}/${arch}` substitution lets
+# one config drive all three platforms; we only build the right one per
+# invocation (CI matrix or local make target).
+extraResources:
+  - from: ../backend/bin/${os}-${arch}/
+    to: backend/
+    filter:
+      - '**/*'
+
+mac:
+  target:
+    - { target: dmg, arch: arm64 }
+    - { target: dmg, arch: x64 }
+  category: public.app-category.education
+  hardenedRuntime: false
+  gatekeeperAssess: false
+
+win:
+  target:
+    - { target: nsis, arch: x64 }
+  artifactName: GoTutor-${version}-${arch}.${ext}
+
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Education
+  maintainer: TeaHouse
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true

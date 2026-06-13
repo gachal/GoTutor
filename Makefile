@@ -1,8 +1,9 @@
 .PHONY: help backend-dev backend-build backend-test \
-        backend-build-darwin-arm64 backend-build-linux-amd64 backend-build-windows-amd64 \
+        backend-build-darwin-arm64 backend-build-darwin-x64 \
+        backend-build-linux-amd64 backend-build-windows-amd64 \
         frontend-install frontend-dev frontend-build \
-        electron-install electron-dev \
-        package-darwin package-linux package-win \
+        electron-install electron-dev electron-build \
+        package-darwin package-darwin-x64 package-linux package-win \
         i18n-check clean
 
 help:
@@ -33,16 +34,20 @@ backend-dev:
 backend-build: backend-build-darwin-arm64 backend-build-linux-amd64 backend-build-windows-amd64
 
 backend-build-darwin-arm64:
-	@mkdir -p backend/bin/darwin-arm64
-	GOOS=darwin GOARCH=arm64 go build -o backend/bin/darwin-arm64/gotutor-backend ./backend
+	@mkdir -p backend/bin/mac-arm64
+	cd backend && GOOS=darwin GOARCH=arm64 go build -o ../bin/mac-arm64/gotutor-backend .
+
+backend-build-darwin-x64:
+	@mkdir -p backend/bin/mac-x64
+	cd backend && GOOS=darwin GOARCH=amd64 go build -o ../bin/mac-x64/gotutor-backend .
 
 backend-build-linux-amd64:
-	@mkdir -p backend/bin/linux-amd64
-	GOOS=linux GOARCH=amd64 go build -o backend/bin/linux-amd64/gotutor-backend ./backend
+	@mkdir -p backend/bin/linux-x64
+	cd backend && GOOS=linux GOARCH=amd64 go build -o ../bin/linux-x64/gotutor-backend .
 
 backend-build-windows-amd64:
-	@mkdir -p backend/bin/windows-amd64
-	GOOS=windows GOARCH=amd64 go build -o backend/bin/windows-amd64/gotutor-backend.exe ./backend
+	@mkdir -p backend/bin/win-x64
+	cd backend && GOOS=windows GOARCH=amd64 go build -o ../bin/win-x64/gotutor-backend.exe .
 
 backend-test:
 	cd backend && go test ./...
@@ -62,13 +67,19 @@ electron-install:
 electron-dev:
 	cd electron && pnpm dev
 
-package-darwin: backend-build-darwin-arm64 frontend-build
+electron-build:
+	cd electron && pnpm build
+
+package-darwin: backend-build-darwin-arm64 frontend-build electron-build
 	cd electron && pnpm exec electron-builder --mac --arm64
 
-package-linux: backend-build-linux-amd64 frontend-build
+package-darwin-x64: backend-build-darwin-x64 frontend-build electron-build
+	cd electron && pnpm exec electron-builder --mac --x64
+
+package-linux: backend-build-linux-amd64 frontend-build electron-build
 	cd electron && pnpm exec electron-builder --linux --x64
 
-package-win: backend-build-windows-amd64 frontend-build
+package-win: backend-build-windows-amd64 frontend-build electron-build
 	cd electron && pnpm exec electron-builder --win --x64
 
 i18n-check:
