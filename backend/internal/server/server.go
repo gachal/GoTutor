@@ -4,6 +4,7 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"net"
@@ -18,26 +19,24 @@ import (
 )
 
 // Server holds all backend dependencies. Construct with New(), drive with
-// Start/Shutdown. Fields are exported so Phase 2/3 handlers can reach the
-// DB and chapter registry through the receiver.
+// Start/Shutdown. Handlers (Phase 2+) reach the DB via DB() and the
+// chapter registry via the chapters package directly.
 type Server struct {
 	cfg     config.Config
-	db      dbConn // interface for testability; production wires *sql.DB
+	db      *sql.DB
 	engine  *gin.Engine
 	httpSrv *http.Server
 }
 
-// dbConn is the subset of *sql.DB the server needs. Defined as interface
-// so tests can inject a fake without dragging in modernc.org/sqlite.
-type dbConn interface {
-	Ping() error
-	Close() error
-}
+// DB exposes the underlying *sql.DB so api handlers can run queries
+// against the progress table. Returned pointer is shared; callers must
+// not close it.
+func (s *Server) DB() *sql.DB { return s.db }
 
 // New constructs a Server. The caller passes an already-open *sql.DB
-// (from db.Open) so server doesn't depend on the db package's driver
-// choice at construction time.
-func New(cfg config.Config, db dbConn) *Server {
+// (from db.Open); the server does not own its lifecycle (the caller
+// defers Close).
+func New(cfg config.Config, db *sql.DB) *Server {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(gin.Recovery())

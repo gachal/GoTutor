@@ -4,41 +4,36 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"gotutor/backend/internal/api"
 )
 
-// routeDef describes one API route plus its handler. Kept as a slice so
-// routes.go reads as a flat table — easy to scan when adding endpoints.
-type routeDef struct {
-	method  string
-	path    string
-	handler gin.HandlerFunc
-}
-
 // RegisterRoutes wires every API route onto the engine. Called once from
-// Server.Start. Health is wired here so /api/health works before any
-// chapter/verifier handler is implemented.
+// Server.New. Health is wired here; chapter list/template/hint/reset
+// land in Phase 2; submit lands in Phase 3.
+//
+// api handlers take *sql.DB directly so routes.go closes over s.DB()
+// for each. We use inline closures instead of gin.HandlerFunc adapters
+// to keep the call sites readable.
 func (s *Server) RegisterRoutes(r *gin.Engine) {
-	routes := []routeDef{
-		{http.MethodGet, "/api/health", s.handleHealth},
-		// Phase 2 fills these in:
-		{http.MethodGet, "/api/chapters", stubNotImplemented},
-		{http.MethodGet, "/api/chapters/:id/template", stubNotImplemented},
-		{http.MethodGet, "/api/chapters/:id/hint", stubNotImplemented},
-		{http.MethodPost, "/api/chapters/:id/submit", stubNotImplemented},
-		{http.MethodPost, "/api/reset", stubNotImplemented},
-	}
+	db := s.DB()
 
-	api := r.Group("")
-	for _, rt := range routes {
-		api.Handle(rt.method, rt.path, rt.handler)
-	}
-}
+	r.GET("/api/health", s.handleHealth)
 
-// stubNotImplemented returns 501 for endpoints wired in Phase 1 but
-// implemented in later phases. Replaced chapter-by-chapter.
-func stubNotImplemented(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, gin.H{
-		"error": "endpoint not yet implemented",
-		"path":  c.Request.URL.Path,
+	r.GET("/api/chapters", func(c *gin.Context) {
+		api.HandleListChapters(c, db)
+	})
+	r.GET("/api/chapters/:id/template", func(c *gin.Context) {
+		api.HandleGetTemplate(c, db)
+	})
+	r.GET("/api/chapters/:id/hint", func(c *gin.Context) {
+		api.HandleGetHint(c, db)
+	})
+	r.POST("/api/chapters/:id/submit", func(c *gin.Context) {
+		// Phase 3 wires the verifier here.
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "submit not yet implemented"})
+	})
+	r.POST("/api/reset", func(c *gin.Context) {
+		api.HandleReset(c, db)
 	})
 }

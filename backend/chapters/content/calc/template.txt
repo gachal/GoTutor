@@ -1,0 +1,26 @@
+// Chapter 1: CLI Calculator — initial skeleton.
+// Fill in the // TODO sections, then click Submit to verify.
+package main
+
+import (
+	"fmt"
+	"os"
+	"strconv"
+)
+
+func main() {
+	args := os.Args[1:]
+	if len(args) != 3 {
+		fmt.Println("usage: calc <num1> <op> <num2>")
+		fmt.Println("       op is one of: + - * /")
+		return
+	}
+
+	// TODO 1: parse args[0] and args[2] as float64 using strconv.ParseFloat.
+	//         Handle parse errors by printing "invalid number" and returning.
+
+	// TODO 2: switch on args[1] (+, -, *, /) and compute the result.
+	//         Print "unknown op" and return for anything else.
+
+	// TODO 3: handle division by zero — print "division by zero" and return.
+}

@@ -1,0 +1,16 @@
+# hints.yaml — per-TODO hint text for the CLI Calculator chapter.
+# Keyed by line number (1-based) of the corresponding // TODO in template.txt.
+# Each hint has both zh and en; the backend selects based on Accept-Language.
+todos:
+  - line: 19
+    hint:
+      zh: 使用 strconv.ParseFloat 解析 args[0] 和 args[2]。记得检查返回的 error，失败时打印 "invalid number" 并 return。
+      en: Use strconv.ParseFloat on args[0] and args[2]. Check the returned error; on failure print "invalid number" and return.
+  - line: 22
+    hint:
+      zh: 用 switch 匹配 args[1]：+ 表示加法，- 表示减法，* 表示乘法，/ 表示除法。其他符号打印 "unknown op" 并 return。
+      en: A switch on args[1] over +, -, *, / is cleanest. For any other operator print "unknown op" and return.
+  - line: 25
+    hint:
+      zh: 在除法分支里，如果第二个数是 0，打印 "division by zero" 并 return。
+      en: In the division case, if the second number is 0, print "division by zero" and return.

@@ -1,0 +1,7 @@
+// Chapter 2: Concurrent URL Checker — PLACEHOLDER.
+// Phase 8 will replace this with the real skeleton teaching goroutines,
+// channels, and sync.WaitGroup. For now this exists so the registry can
+// list two chapters end-to-end.
+package main
+
+func main() {}
