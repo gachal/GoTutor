@@ -1,0 +1,42 @@
+app:
+  name: GoTutor
+  tagline: 通过填空真实项目学 Go
+sidebar:
+  title: 章节
+  theme:
+    label: 主题
+    system: 跟随系统
+    light: 浅色
+    dark: 深色
+  locale:
+    label: 语言
+  reset:
+    label: 重置进度
+    confirm: 这将清空所有章节的完成记录。确定继续吗？
+chapter:
+  locked: 请先完成上一章节
+  status:
+    locked: 锁定
+    in-progress: 进行中
+    completed: 已完成
+editor:
+  placeholder: 在这里编写 Go 代码...
+  submit: 提交
+  submitting: 正在验证...
+  hint: 提示
+  reset: 重置代码
+  shortcut_submit: '⌘/Ctrl + Enter 提交'
+output:
+  title: 输出
+  empty: 提交代码后这里会显示测试结果
+  passed: 通过！
+  failed: 失败
+  duration: '耗时 {ms} 毫秒'
+  unlocked_next: 已解锁下一章节
+errors:
+  backend_down: 无法连接到后端服务
+  unknown: 出错了
+common:
+  cancel: 取消
+  confirm: 确认
+  retry: 重试

@@ -5,10 +5,25 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
+    "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "type-check": "vue-tsc --noEmit"
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {
+    "@guolao/vue-monaco-editor": "^1.5.4",
+    "@vueuse/core": "^11.3.0",
+    "axios": "^1.7.9",
+    "monaco-editor": "^0.52.2",
+    "pinia": "^2.3.0",
+    "vue": "^3.5.13",
+    "vue-i18n": "^11.0.1",
+    "vue-router": "^4.5.0",
+    "yaml": "^2.6.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "vue-tsc": "^2.1.10"
+  }
 }

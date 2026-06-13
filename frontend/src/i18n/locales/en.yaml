@@ -1,0 +1,42 @@
+app:
+  name: GoTutor
+  tagline: Learn Go by filling in real projects
+sidebar:
+  title: Chapters
+  theme:
+    label: Theme
+    system: System
+    light: Light
+    dark: Dark
+  locale:
+    label: Language
+  reset:
+    label: Reset progress
+    confirm: This will clear all chapter completion records. Continue?
+chapter:
+  locked: Complete the previous chapter first
+  status:
+    locked: Locked
+    in-progress: In progress
+    completed: Completed
+editor:
+  placeholder: Write your Go code here...
+  submit: Submit
+  submitting: Verifying...
+  hint: Hint
+  reset: Reset code
+  shortcut_submit: '⌘/Ctrl + Enter to submit'
+output:
+  title: Output
+  empty: Test results will appear here after you submit
+  passed: Passed!
+  failed: Failed
+  duration: '{ms} ms'
+  unlocked_next: Next chapter unlocked
+errors:
+  backend_down: Cannot reach the backend service
+  unknown: Something went wrong
+common:
+  cancel: Cancel
+  confirm: Confirm
+  retry: Retry

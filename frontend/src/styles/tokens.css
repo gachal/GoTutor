@@ -1,0 +1,88 @@
+/* Design tokens — light theme defaults, dark theme overrides via .dark on <html>.
+ * Components MUST read tokens, never hardcode hex. Adding a new color =
+ * adding it here in both blocks. */
+:root {
+  /* surfaces */
+  --bg:          oklch(99% 0.001 100);
+  --surface:     oklch(97% 0.002 100);
+  --surface-2:   oklch(94% 0.003 100);
+  --border:      oklch(88% 0.005 100);
+
+  /* text */
+  --fg:          oklch(20% 0.01 100);
+  --fg-muted:    oklch(45% 0.01 100);
+  --fg-subtle:   oklch(60% 0.005 100);
+
+  /* accents */
+  --accent:      oklch(62% 0.18 250);
+  --accent-fg:   oklch(99% 0.001 100);
+  --success:     oklch(62% 0.17 145);
+  --warning:     oklch(72% 0.16 75);
+  --danger:      oklch(60% 0.20 25);
+
+  /* editor */
+  --glyph-todo:  oklch(72% 0.16 75);
+
+  /* typography */
+  --font-sans:   -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono:   ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+  --text-base:   14px;
+  --text-sm:     13px;
+  --text-xs:     11px;
+
+  /* spacing */
+  --space-1:     4px;
+  --space-2:     8px;
+  --space-3:     12px;
+  --space-4:     16px;
+  --space-5:     24px;
+  --space-6:     32px;
+
+  /* layout */
+  --sidebar-w:   280px;
+  --radius:      6px;
+  --radius-lg:   10px;
+
+  /* shadow */
+  --shadow-sm:   0 1px 2px oklch(0% 0 0 / 0.06);
+  --shadow-md:   0 4px 12px oklch(0% 0 0 / 0.10);
+}
+
+:root.dark {
+  --bg:          oklch(18% 0.005 250);
+  --surface:     oklch(22% 0.005 250);
+  --surface-2:   oklch(26% 0.006 250);
+  --border:      oklch(35% 0.008 250);
+
+  --fg:          oklch(94% 0.005 250);
+  --fg-muted:    oklch(70% 0.008 250);
+  --fg-subtle:   oklch(55% 0.005 250);
+
+  --accent:      oklch(68% 0.17 245);
+  --accent-fg:   oklch(15% 0.005 250);
+
+  --shadow-sm:   0 1px 2px oklch(0% 0 0 / 0.30);
+  --shadow-md:   0 4px 12px oklch(0% 0 0 / 0.40);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #app {
+  height: 100%;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  color: var(--fg);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
