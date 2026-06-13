@@ -1,2 +1,15 @@
-# hints.yaml — placeholder for Chapter 2. Phase 8 will populate real hints.
-todos: []
+# hints.yaml — per-TODO hint text for the Concurrent URL Checker chapter.
+# Line numbers refer to template.txt.
+todos:
+  - line: 17
+    hint:
+      zh: 使用 http.Get(url) 发送请求。如果 err != nil 就返回 (0, err)。否则返回 (resp.StatusCode, nil)，记得 defer resp.Body.Close()。
+      en: Use http.Get(url). If err != nil return (0, err). Otherwise return (resp.StatusCode, nil) and defer resp.Body.Close().
+  - line: 28
+    hint:
+      zh: 用 sync.WaitGroup。循环里 wg.Add(1) 再 go func() { defer wg.Done(); ... }()。结果通过 channel 或受 sync.Mutex 保护的 map 收集。
+      en: Use a sync.WaitGroup. Call wg.Add(1) in the loop, then go func() { defer wg.Done(); ... }(). Collect results via a channel or a map guarded by sync.Mutex.
+  - line: 32
+    hint:
+      zh: 在 return 之前调用 wg.Wait()，确保所有 goroutine 完成。
+      en: Call wg.Wait() before returning so all goroutines finish first.

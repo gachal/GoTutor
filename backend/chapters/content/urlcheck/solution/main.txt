@@ -1,0 +1,40 @@
+// Reference solution for Chapter 2: Concurrent URL Checker.
+package main
+
+import (
+	"net/http"
+	"sync"
+)
+
+func CheckURL(url string) (int, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+	return resp.StatusCode, nil
+}
+
+func CheckAll(urls []string) map[string]int {
+	var (
+		mu sync.Mutex
+		wg sync.WaitGroup
+	)
+	results := make(map[string]int, len(urls))
+
+	for _, u := range urls {
+		wg.Add(1)
+		go func(url string) {
+			defer wg.Done()
+			status, _ := CheckURL(url)
+			mu.Lock()
+			results[url] = status
+			mu.Unlock()
+		}(u)
+	}
+
+	wg.Wait()
+	return results
+}
+
+func main() {}

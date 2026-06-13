@@ -1,0 +1,61 @@
+package main
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"sync"
+	"testing"
+	"time"
+)
+
+// TestCheckAll exercises the user's CheckAll against real httptest
+// servers. The test is in package main so it can call the user's
+// functions directly — no subprocess boundary, no JSON marshaling.
+func TestCheckAll(t *testing.T) {
+	ok := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ok.Close()
+
+	missing := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer missing.Close()
+
+	results := CheckAll([]string{ok.URL, missing.URL})
+	if results[ok.URL] != http.StatusOK {
+		t.Errorf("expected %d for ok server, got %d", http.StatusOK, results[ok.URL])
+	}
+	if results[missing.URL] != http.StatusNotFound {
+		t.Errorf("expected %d for missing server, got %d", http.StatusNotFound, results[missing.URL])
+	}
+}
+
+// TestCheckAllIsConcurrent enforces that the learner used goroutines
+// rather than a serial loop. Three URLs each sleeping 200ms must
+// complete in well under 600ms — only possible if the requests overlap.
+//
+// We use a generous bound (350ms cap) so this isn't flaky on slow CI,
+// but a serial implementation would take ~600ms+ and fail.
+func TestCheckAllIsConcurrent(t *testing.T) {
+	var mu sync.Mutex
+	slow := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		mu.Lock()
+		_ = 0
+		mu.Unlock()
+		time.Sleep(200 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer slow.Close()
+
+	start := time.Now()
+	results := CheckAll([]string{slow.URL, slow.URL, slow.URL})
+	elapsed := time.Since(start)
+
+	if results[slow.URL] != http.StatusOK {
+		t.Errorf("expected all OK, got %d", results[slow.URL])
+	}
+	if elapsed > 350*time.Millisecond {
+		t.Errorf("CheckAll took %v — looks serial (expected <350ms if concurrent)", elapsed)
+	}
+}

@@ -1,7 +1,36 @@
-// Chapter 2: Concurrent URL Checker — PLACEHOLDER.
-// Phase 8 will replace this with the real skeleton teaching goroutines,
-// channels, and sync.WaitGroup. For now this exists so the registry can
-// list two chapters end-to-end.
+// Chapter 2: Concurrent URL Checker — initial skeleton.
+// Implement CheckURL and CheckAll. CheckAll must fan out concurrently
+// using goroutines and a sync.WaitGroup; the test enforces a timing
+// budget that's only satisfiable if the requests run in parallel.
 package main
 
-func main() {}
+import (
+	"fmt"
+	"net/http"
+	"sync"
+)
+
+// CheckURL issues a single GET and returns the HTTP status code.
+// Any transport error (DNS failure, connection refused) should return
+// a 0 status and a non-nil error so the caller can record it.
+func CheckURL(url string) (int, error) {
+	// TODO 1: use http.Get to fetch the URL. On error, return (0, err).
+	//         Otherwise return (resp.StatusCode, nil) and close the body.
+	return 0, nil
+}
+
+// CheckAll fans out one goroutine per URL, collects results into a map,
+// and returns once every goroutine has finished. Use a sync.WaitGroup
+// to wait, and a sync.Mutex (or a channel) to safely merge results.
+func CheckAll(urls []string) map[string]int {
+	results := make(map[string]int)
+
+	// TODO 2: launch a goroutine per url that calls CheckURL and writes
+	//         the status into `results`. Guard the map write with a
+	//         mutex or send through a channel.
+
+	// TODO 3: wait for all goroutines to complete before returning.
+	_ = fmt.Sprintf // placeholder so the file compiles before edits
+	_ = sync.WaitGroup{}
+	return results
+}
