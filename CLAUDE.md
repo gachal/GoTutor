@@ -11,6 +11,7 @@ wired end-to-end; both shipped chapters (calc, urlcheck) play through
 the full Monaco + sandboxed-go-test flow.
 
 Read the docs first when picking up context:
+- [docs/PACKAGING.md](docs/PACKAGING.md) — build `.dmg`/`.exe`/`.AppImage`, Gatekeeper bypass, troubleshooting
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — system layers + submit flow
 - [docs/SECURITY.md](docs/SECURITY.md) — sandbox threat model + future hardening
 - [docs/ADDING_A_CHAPTER.md](docs/ADDING_A_CHAPTER.md) — how to add Chapter 3+

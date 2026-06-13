@@ -84,6 +84,8 @@ to all four targets without a C toolchain per OS.
 
 ## Documentation
 
+- [Packaging](docs/PACKAGING.md) — build `.dmg` / `.exe` / `.AppImage`
+  installers, Gatekeeper bypass, troubleshooting.
 - [Architecture](docs/ARCHITECTURE.md) — system layers, end-to-end
   submit flow, storage layout.
 - [Security model](docs/SECURITY.md) — what the sandbox defends against,
