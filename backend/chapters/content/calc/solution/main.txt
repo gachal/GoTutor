@@ -1,0 +1,48 @@
+// Reference solution for Chapter 1: CLI Calculator.
+// Embedded for CI (verifies the chapter is solvable) and as a teacher's
+// reference. NEVER returned by any API endpoint — the learner earns the
+// answer by completing the chapter.
+package main
+
+import (
+	"fmt"
+	"os"
+	"strconv"
+)
+
+func main() {
+	args := os.Args[1:]
+	if len(args) != 3 {
+		fmt.Println("usage: calc <num1> <op> <num2>")
+		fmt.Println("       op is one of: + - * /")
+		return
+	}
+
+	a, err := strconv.ParseFloat(args[0], 64)
+	if err != nil {
+		fmt.Println("invalid number")
+		return
+	}
+	b, err := strconv.ParseFloat(args[2], 64)
+	if err != nil {
+		fmt.Println("invalid number")
+		return
+	}
+
+	switch args[1] {
+	case "+":
+		fmt.Println(a + b)
+	case "-":
+		fmt.Println(a - b)
+	case "*":
+		fmt.Println(a * b)
+	case "/":
+		if b == 0 {
+			fmt.Println("division by zero")
+			return
+		}
+		fmt.Println(a / b)
+	default:
+		fmt.Println("unknown op")
+	}
+}

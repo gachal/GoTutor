@@ -1,0 +1,42 @@
+package main
+
+import (
+	"os/exec"
+	"strings"
+	"testing"
+)
+
+// TestCalculator drives the learner's program as a subprocess and
+// checks stdout against expected substrings. This is intentional: the
+// exercise teaches os.Args + main(), and a black-box test lets the
+// learner structure their code however they like as long as the CLI
+// contract holds.
+func TestCalculator(t *testing.T) {
+	cases := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{"add", []string{"2", "+", "3"}, "5"},
+		{"sub", []string{"10", "-", "4"}, "6"},
+		{"mul", []string{"6", "*", "7"}, "42"},
+		{"div", []string{"20", "/", "4"}, "5"},
+		{"divzero", []string{"20", "/", "0"}, "division by zero"},
+		{"badnum", []string{"abc", "+", "1"}, "invalid number"},
+		{"unknownop", []string{"2", "%", "3"}, "unknown op"},
+		{"toofewargs", []string{"1", "+"}, "usage"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := exec.Command("go", append([]string{"run", "."}, tc.args...)...).CombinedOutput()
+			// "go run" returns non-zero if the program exits non-zero.
+			// That's fine for divzero/badnum/unknownop cases; the
+			// expected substring should still appear in stdout.
+			_ = err
+			if !strings.Contains(string(out), tc.want) {
+				t.Errorf("args=%v\n got %q\nwant substring %q", tc.args, string(out), tc.want)
+			}
+		})
+	}
+}

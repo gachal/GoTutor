@@ -1,8 +1,6 @@
 package server
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 
 	"gotutor/backend/internal/api"
@@ -30,8 +28,7 @@ func (s *Server) RegisterRoutes(r *gin.Engine) {
 		api.HandleGetHint(c, db)
 	})
 	r.POST("/api/chapters/:id/submit", func(c *gin.Context) {
-		// Phase 3 wires the verifier here.
-		c.JSON(http.StatusNotImplemented, gin.H{"error": "submit not yet implemented"})
+		api.HandleSubmit(c, db, s.cfg.GoBinary)
 	})
 	r.POST("/api/reset", func(c *gin.Context) {
 		api.HandleReset(c, db)

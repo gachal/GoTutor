@@ -143,6 +143,39 @@ func (c Chapter) HintForLine(line int) (Hint, bool) {
 	return Hint{}, false
 }
 
+// TestFiles returns the chapter's test files keyed by their on-disk name.
+// Files in `<contentDir>/tests/` ship as `<name>_test.go.txt` — the `.go.txt`
+// suffix works around go:embed skipping `.go` files. Stripping the trailing
+// `.txt` yields `<name>_test.go`, which `go test` discovers normally.
+//
+// Example: content/calc/tests/calculator_test.go.txt
+//        → {"calculator_test.go": <text>}
+func (c Chapter) TestFiles() (map[string]string, error) {
+	testDir := c.contentDir + "/tests"
+	entries, err := fs.ReadDir(contentFS, testDir)
+	if err != nil {
+		return nil, fmt.Errorf("read tests dir for %s: %w", c.ID, err)
+	}
+	out := map[string]string{}
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		if !strings.HasSuffix(name, ".txt") {
+			continue
+		}
+		b, err := fs.ReadFile(contentFS, testDir+"/"+name)
+		if err != nil {
+			return nil, fmt.Errorf("read test %s: %w", name, err)
+		}
+		// Strip the trailing .txt so the on-disk filename ends in _test.go.
+		goName := strings.TrimSuffix(name, ".txt")
+		out[goName] = string(b)
+	}
+	return out, nil
+}
+
 // TemplateTodos scans the template for lines containing `TODO` and
 // returns them as Todo entries with their hint text (locale already
 // resolved by the caller's preference). Used by GET /template.
