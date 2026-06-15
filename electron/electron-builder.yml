@@ -23,18 +23,27 @@ directories:
   output: ../release
   buildResources: build
 
-# What goes into the app bundle. electron/dist (compiled TS) and
-# frontend/dist (built SPA) are required.
+# What goes into the asar. electron/dist (compiled TS) + package.json.
+# Note: we canNOT use `../frontend/dist/**` here — electron-builder
+# rejects paths with `..` for security. The frontend ships via
+# extraResources below instead.
 files:
   - dist/**
-  - ../frontend/dist/**
+  - package.json
 
-# Go backend ships as a sidecar. The `${os}/${arch}` substitution lets
-# one config drive all three platforms; we only build the right one per
-# invocation (CI matrix or local make target).
+# Sidecars that don't belong inside the asar — they're read by the main
+# process via process.resourcesPath at runtime.
+#
+# - backend:  Go binary, cross-compiled per os/arch.
+# - frontend: built Vue SPA. Loaded by main.ts via loadFile from
+#             <resourcesPath>/frontend/dist/index.html.
 extraResources:
   - from: ../backend/bin/${os}-${arch}/
     to: backend/
+    filter:
+      - '**/*'
+  - from: ../frontend/dist/
+    to: frontend/dist/
     filter:
       - '**/*'
 

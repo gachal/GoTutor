@@ -1,5 +1,6 @@
 import { app, BrowserWindow } from 'electron'
 import { join } from 'path'
+import { existsSync } from 'fs'
 import { detectGo } from './goDetector'
 import { spawnBackend, BackendHandle } from './backend'
 import { waitForPortFile, defaultPortFile } from './portDiscovery'
@@ -69,10 +70,21 @@ function createWindow(backendPort: number) {
     mainWindow.loadURL(DEV_SERVER_URL)
     mainWindow.webContents.openDevTools({ mode: 'detach' })
   } else {
-    const distIndex = join(__dirname, '..', '..', 'frontend', 'dist', 'index.html')
-    mainWindow.loadFile(distIndex).catch((e) => {
-      console.error(`[gotutor] failed to load ${distIndex}:`, e)
-    })
+    // Packaged mode: frontend ships via extraResources at
+    // <resourcesPath>/frontend/dist/index.html. Dev mode uses Vite URL.
+    const candidates = [
+      join(process.resourcesPath, 'frontend', 'dist', 'index.html'),
+      join(__dirname, '..', '..', 'frontend', 'dist', 'index.html'),
+      join(app.getAppPath(), 'frontend', 'dist', 'index.html'),
+    ]
+    const distIndex = candidates.find((p) => existsSync(p))
+    if (!distIndex) {
+      console.error('[gotutor] frontend index.html not found in any of:', candidates)
+    } else {
+      mainWindow.loadFile(distIndex).catch((e) => {
+        console.error(`[gotutor] failed to load ${distIndex}:`, e)
+      })
+    }
   }
 
   mainWindow.on('closed', () => {

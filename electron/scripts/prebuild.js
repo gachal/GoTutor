@@ -37,16 +37,34 @@ function main() {
   // electron/scripts/ → electron/ → GoTutor/
   const repoRoot = path.resolve(__dirname, '..', '..')
   const binPath = path.join(repoRoot, 'backend', 'bin', dirName, binName)
+  const frontendIndex = path.join(repoRoot, 'frontend', 'dist', 'index.html')
 
+  const errors = []
   if (!fs.existsSync(binPath)) {
-    console.error(`[prebuild] backend binary not found at: ${binPath}`)
-    console.error(`[prebuild] Run \`make backend-build-${goosTarget(osName)}-${goarchTarget(arch)}\` first.`)
-    console.error(`[prebuild] Or run \`make package-${packageTarget(osName)}\` which does both.`)
-    process.exit(1)
+    errors.push(
+      `backend binary not found at: ${binPath}`,
+      `  fix: run \`make backend-build-${goosTarget(osName)}-${goarchTarget(arch)}\``,
+    )
+  } else {
+    const stat = fs.statSync(binPath)
+    console.log(`[prebuild] OK: ${path.relative(repoRoot, binPath)} (${(stat.size / 1024 / 1024).toFixed(1)} MB)`)
   }
 
-  const stat = fs.statSync(binPath)
-  console.log(`[prebuild] OK: ${path.relative(repoRoot, binPath)} (${(stat.size / 1024 / 1024).toFixed(1)} MB)`)
+  if (!fs.existsSync(frontendIndex)) {
+    errors.push(
+      `frontend build not found at: ${frontendIndex}`,
+      `  fix: run \`make frontend-build\``,
+    )
+  } else {
+    console.log(`[prebuild] OK: ${path.relative(repoRoot, frontendIndex)}`)
+  }
+
+  if (errors.length > 0) {
+    console.error('[prebuild] FAILED:')
+    for (const e of errors) console.error('  ' + e)
+    console.error('[prebuild] Or run `make package-' + packageTarget(osName) + '` which builds everything.')
+    process.exit(1)
+  }
 }
 
 function goosTarget(osName) {
