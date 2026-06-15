@@ -1,10 +1,31 @@
 package server
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 
 	"gotutor/backend/internal/api"
 )
+
+// corsMiddleware allows cross-origin requests from the packaged
+// renderer (which runs on a file:// origin) to the localhost backend.
+//
+// We allow `*' because the backend binds to 127.0.0.1 only — remote
+// hosts can't reach it regardless. Without these headers, the
+// renderer's fetches are blocked by the browser's same-origin policy.
+func corsMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Accept-Language")
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+		c.Next()
+	}
+}
 
 // RegisterRoutes wires every API route onto the engine. Called once from
 // Server.New. Health is wired here; chapter list/template/hint/reset

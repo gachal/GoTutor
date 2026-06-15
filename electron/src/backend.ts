@@ -2,18 +2,22 @@ import { ChildProcess, spawn } from 'child_process'
 import { createWriteStream, WriteStream, existsSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
-import { defaultPortFile } from './portDiscovery'
 
 // BackendHandle owns the spawned Go binary's lifecycle. main.ts creates
-// one on boot, awaits its port via portDiscovery, and calls stop() on
-// before-quit. Crash detection flows through the child's `exit` event.
+// one on boot and calls stop() on before-quit. Crash detection flows
+// through the child's `exit` event.
 export interface BackendHandle {
   process: ChildProcess
   port: number
-  portFile: string
   logFile: string
   stop: () => Promise<void>
 }
+
+// Fixed port — see BACKEND_PORT in main.ts and BACKEND_URL in
+// frontend/src/api/client.ts. The backend still writes a port file to
+// ~/.gotutor/backend.port for diagnostics, but the renderer no longer
+// reads it; the URL is hardcoded.
+const BACKEND_PORT = 8081
 
 // resolveBackendBinary finds the Go binary for the current platform:
 //   dev (GOTUTOR_DEV=1) — pre-built backend/bin/<os>-<arch>/gotutor-backend
@@ -46,7 +50,6 @@ function devBinaryPath(): string {
 // spawnBackend launches the Go binary with sensible defaults and returns
 // a handle. The caller MUST call handle.stop() on shutdown.
 export function spawnBackend(): BackendHandle {
-  const portFile = defaultPortFile()
   const logFile = join(app.getPath('logs'), 'backend.log')
 
   const logStream: WriteStream = createWriteStream(logFile, { flags: 'a' })
@@ -56,12 +59,12 @@ export function spawnBackend(): BackendHandle {
   const bin = resolveBackendBinary()
   if (bin === 'go') {
     const repoRoot = join(__dirname, '..', '..')
-    proc = spawn('go', ['run', './backend', '-portfile', portFile], {
+    proc = spawn('go', ['run', './backend'], {
       cwd: repoRoot,
       stdio: ['ignore', 'pipe', 'pipe'],
     })
   } else {
-    proc = spawn(bin, ['-portfile', portFile], {
+    proc = spawn(bin, {
       stdio: ['ignore', 'pipe', 'pipe'],
     })
   }
@@ -83,5 +86,5 @@ export function spawnBackend(): BackendHandle {
     })
   }
 
-  return { process: proc, port: 0, portFile, logFile, stop }
+  return { process: proc, port: BACKEND_PORT, logFile, stop }
 }

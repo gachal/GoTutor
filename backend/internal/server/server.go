@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -40,6 +41,7 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(gin.Recovery())
+	r.Use(corsMiddleware())
 	r.Use(requestLogger())
 
 	s := &Server{
@@ -88,28 +90,21 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 }
 
-// bind scans cfg.Port..cfg.PortMax for a free TCP port and returns a
-// net.Listener bound to it. If cfg.Port is 0 the scan starts at 8081.
+// bind binds a single TCP port (cfg.Port, default 8081). We used to
+// scan a range on collision, but the port-file discovery dance this
+// enabled had timing races with the renderer's onMounted. The frontend
+// now hardcodes :8081, so we bind exactly that port and surface the
+// error if it's taken.
 func (s *Server) bind() (net.Listener, int, error) {
-	lo, hi := s.cfg.Port, s.cfg.PortMax
-	if lo == 0 {
-		lo = 8081
+	p := s.cfg.Port
+	if p == 0 {
+		p = 8081
 	}
-	if hi < lo {
-		hi = lo
+	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", p))
+	if err != nil {
+		return nil, 0, fmt.Errorf("bind 127.0.0.1:%d: %w", p, err)
 	}
-	var lastErr error
-	for p := lo; p <= hi; p++ {
-		ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", p))
-		if err == nil {
-			return ln, p, nil
-		}
-		lastErr = err
-	}
-	if lastErr == nil {
-		lastErr = errors.New("no ports available")
-	}
-	return nil, 0, fmt.Errorf("bind 127.0.0.1:%d..%d: %w", lo, hi, lastErr)
+	return ln, p, nil
 }
 
 // Shutdown gracefully stops the HTTP server with a 5s deadline.
@@ -147,8 +142,15 @@ func (s *Server) handleHealth(c *gin.Context) {
 }
 
 // writePortFile atomically writes the chosen port so Electron can poll it.
-// We write to a temp file in the same dir then rename for atomicity.
+// MkdirAll the parent first — ~/.gotutor/ doesn't exist on a fresh
+// install, and os.WriteFile won't create it. The atomic rename only
+// works if both files are in the same directory, which is why we put
+// the tmp file next to the final path.
 func writePortFile(path string, port int) error {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("mkdir %s: %w", dir, err)
+	}
 	tmp := path + ".tmp"
 	if err := os.WriteFile(tmp, []byte(fmt.Sprintf("%d\n", port)), 0o644); err != nil {
 		return err

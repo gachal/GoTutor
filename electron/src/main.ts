@@ -3,10 +3,11 @@ import { join } from 'path'
 import { existsSync } from 'fs'
 import { detectGo } from './goDetector'
 import { spawnBackend, BackendHandle } from './backend'
-import { waitForPortFile, defaultPortFile } from './portDiscovery'
 
-// Global so we can stop() it on before-quit even if createWindow
-// captured the handle in a closure.
+// Fixed port — the frontend hardcodes http://localhost:8081/api in
+// src/api/client.ts. No port-file discovery needed.
+const BACKEND_PORT = 8081
+
 let backend: BackendHandle | null = null
 let mainWindow: BrowserWindow | null = null
 
@@ -15,14 +16,13 @@ const DEV_SERVER_URL = process.env.GOTUTOR_DEV_URL || 'http://localhost:5173'
 async function bootstrap() {
   const go = detectGo()
   if (!go.found) {
-    // We still launch — the renderer shows an install-Go screen and
-    // polls /api/health (which will report goFound=false).
     console.warn('[gotutor] Go toolchain not found on PATH')
   } else {
     console.log(`[gotutor] Go: ${go.version} @ ${go.path}`)
   }
 
   backend = spawnBackend()
+  backend.port = BACKEND_PORT
   backend.process.on('exit', (code, signal) => {
     console.error(`[gotutor] backend exited code=${code} signal=${signal}`)
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -30,20 +30,16 @@ async function bootstrap() {
     }
   })
 
-  let port: number
-  try {
-    port = await waitForPortFile(defaultPortFile())
-    backend.port = port
-    console.log(`[gotutor] backend listening on :${port}`)
-  } catch (e) {
-    console.error(`[gotutor] ${e instanceof Error ? e.message : String(e)}`)
-    port = 0
-  }
+  // Give the backend a moment to bind before opening the window so the
+  // first /api/chapters fetch doesn't get ECONNREFUSED. 500ms is plenty
+  // for a Gin server cold-start; if it's not up by then the frontend
+  // shows its "backend down" state and the user can retry.
+  await new Promise((r) => setTimeout(r, 500))
 
-  createWindow(port)
+  createWindow()
 }
 
-function createWindow(backendPort: number) {
+function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -57,13 +53,6 @@ function createWindow(backendPort: number) {
       nodeIntegration: false,
       sandbox: true,
     },
-  })
-
-  mainWindow.webContents.on('did-finish-load', () => {
-    mainWindow?.webContents.executeJavaScript(
-      `window.__GOTUTOR_BACKEND_PORT__ = ${backendPort};`,
-      true,
-    ).catch(() => { /* ignore */ })
   })
 
   if (process.env.GOTUTOR_DEV === '1' || process.env.GOTUTOR_DEV_URL) {
@@ -98,7 +87,7 @@ app.whenReady().then(() => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0 && backend) {
-    createWindow(backend.port)
+    createWindow()
   }
 })
 

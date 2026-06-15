@@ -16,10 +16,17 @@ export function setLocale(loc: 'zh-CN' | 'en') {
   currentLocale = loc
 }
 
+// Absolute URL: the backend always listens on localhost:8081.
+// In dev mode Vite used to proxy /api → :8081, but in packaged mode
+// the page origin is file:// and a relative '/api' resolves to a
+// non-existent file path. Using an absolute URL works in both modes
+// and lets us drop the Vite proxy entirely.
+const BACKEND_URL = 'http://localhost:8081/api'
+
 // 30s timeout bounds hung submit requests (verifier caps at 15s; this
 // gives ~15s of network/queue slack).
 const instance: AxiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: BACKEND_URL,
   timeout: 30_000,
   headers: { 'Content-Type': 'application/json' },
 })
