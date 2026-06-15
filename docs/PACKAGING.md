@@ -120,9 +120,18 @@ downloads the Electron binary for the target OS automatically.
 
 - **`tsc: command not found`** — `make electron-install` didn't finish.
   Re-run; if it hangs, retry with `pnpm install --dir electron`.
+- **`[prebuild] backend binary not found`** — the Go binary for the
+  target platform/arch isn't built. Run
+  `make backend-build-darwin-arm64` (or matching target) first, or use
+  `make package-darwin` which chains both.
+- **App launches but immediately errors with `spawn .../Resources/
+  backend/gotutor-backend ENOENT`** — the .app was packaged without the
+  Go binary inside (a stale build from before the path fix). Rebuild
+  from clean: `rm -rf backend/bin release && make package-darwin`.
 - **electron-builder fails with `extraResources` error** — the backend
-  binary for your target arch doesn't exist. Run
-  `make backend-build-darwin-arm64` (or matching target) first.
+  binary for your target arch doesn't exist. The prebuild check should
+  catch this first; if not, run
+  `make backend-build-darwin-arm64` (or matching target).
 - **App opens but shows "Cannot reach backend"** — backend crashed on
   boot. Check `~/Library/Logs/gotutor/backend.log` (macOS path; the
   Electron main process writes there via `app.getPath('logs')`).

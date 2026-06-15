@@ -7,7 +7,8 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json && electron .",
     "start": "electron .",
-    "package": "tsc -p tsconfig.json && electron-builder"
+    "prebuild": "node scripts/prebuild.js",
+    "package": "node scripts/prebuild.js && tsc -p tsconfig.json && electron-builder"
   },
   "dependencies": {},
   "devDependencies": {

@@ -35,19 +35,19 @@ backend-build: backend-build-darwin-arm64 backend-build-linux-amd64 backend-buil
 
 backend-build-darwin-arm64:
 	@mkdir -p backend/bin/mac-arm64
-	cd backend && GOOS=darwin GOARCH=arm64 go build -o ../bin/mac-arm64/gotutor-backend .
+	cd backend && GOOS=darwin GOARCH=arm64 go build -o bin/mac-arm64/gotutor-backend .
 
 backend-build-darwin-x64:
 	@mkdir -p backend/bin/mac-x64
-	cd backend && GOOS=darwin GOARCH=amd64 go build -o ../bin/mac-x64/gotutor-backend .
+	cd backend && GOOS=darwin GOARCH=amd64 go build -o bin/mac-x64/gotutor-backend .
 
 backend-build-linux-amd64:
 	@mkdir -p backend/bin/linux-x64
-	cd backend && GOOS=linux GOARCH=amd64 go build -o ../bin/linux-x64/gotutor-backend .
+	cd backend && GOOS=linux GOARCH=amd64 go build -o bin/linux-x64/gotutor-backend .
 
 backend-build-windows-amd64:
 	@mkdir -p backend/bin/win-x64
-	cd backend && GOOS=windows GOARCH=amd64 go build -o ../bin/win-x64/gotutor-backend.exe .
+	cd backend && GOOS=windows GOARCH=amd64 go build -o bin/win-x64/gotutor-backend.exe .
 
 backend-test:
 	cd backend && go test ./...
@@ -71,16 +71,16 @@ electron-build:
 	cd electron && pnpm build
 
 package-darwin: backend-build-darwin-arm64 frontend-build electron-build
-	cd electron && pnpm exec electron-builder --mac --arm64
+	cd electron && node scripts/prebuild.js --mac --arm64 && pnpm exec electron-builder --mac --arm64
 
 package-darwin-x64: backend-build-darwin-x64 frontend-build electron-build
-	cd electron && pnpm exec electron-builder --mac --x64
+	cd electron && node scripts/prebuild.js --mac --x64 && pnpm exec electron-builder --mac --x64
 
 package-linux: backend-build-linux-amd64 frontend-build electron-build
-	cd electron && pnpm exec electron-builder --linux --x64
+	cd electron && node scripts/prebuild.js --linux --x64 && pnpm exec electron-builder --linux --x64
 
 package-win: backend-build-windows-amd64 frontend-build electron-build
-	cd electron && pnpm exec electron-builder --win --x64
+	cd electron && node scripts/prebuild.js --win --x64 && pnpm exec electron-builder --win --x64
 
 i18n-check:
 	@echo "i18n key consistency check — implemented in Phase 12"
