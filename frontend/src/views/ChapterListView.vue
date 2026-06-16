@@ -15,17 +15,16 @@ const chapters = useChaptersStore()
       <li
         v-for="ch in chapters.list"
         :key="ch.id"
-        :class="['tile', { locked: !ch.unlocked }]"
+        class="tile"
       >
-        <router-link v-if="ch.unlocked" :to="`/chapter/${ch.id}`" class="tile-link">
+        <router-link :to="`/chapter/${ch.id}`" class="tile-link">
           <span class="tile-ord">{{ ch.ordinal }}</span>
-          <span class="tile-title">{{ ch.title }}</span>
+          <span class="tile-title">
+            {{ ch.title }}
+            <span v-if="ch.completed" class="done" aria-label="completed">✓</span>
+          </span>
           <span class="tile-desc">{{ ch.description }}</span>
         </router-link>
-        <div v-else class="tile-link disabled">
-          <span class="tile-ord">🔒</span>
-          <span class="tile-title">{{ ch.title }}</span>
-        </div>
       </li>
     </ul>
   </section>
@@ -65,13 +64,17 @@ const chapters = useChaptersStore()
   gap: var(--space-2);
 }
 .tile-link:hover { background: var(--surface-2); }
-.tile-link.disabled { opacity: 0.5; cursor: not-allowed; }
 .tile-ord {
   font-size: var(--text-xs);
   color: var(--fg-subtle);
   text-transform: uppercase;
 }
 .tile-title { font-size: 16px; font-weight: 600; }
+.tile-title .done {
+  color: var(--success);
+  font-weight: 700;
+  margin-left: var(--space-1);
+}
 .tile-desc {
   font-size: var(--text-sm);
   color: var(--fg-muted);

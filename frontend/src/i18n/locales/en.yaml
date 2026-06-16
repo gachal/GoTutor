@@ -10,9 +10,6 @@ sidebar:
     dark: Dark
   locale:
     label: Language
-  reset:
-    label: Reset progress
-    confirm: This will clear all chapter completion records. Continue?
 chapter:
   locked: Complete the previous chapter first
   status:
@@ -33,6 +30,15 @@ output:
   failed: Failed
   duration: '{ms} ms'
   unlocked_next: Next chapter unlocked
+solution:
+  open: Recommended answer
+  title: Recommended answer
+  subtitle: One possible reference solution — yours may differ and still pass.
+  close: Close
+  loading: Loading…
+  load_error: Failed to load the answer
+  copy: Copy
+  copied: Copied
 errors:
   backend_down: Cannot reach the backend service
   unknown: Something went wrong

@@ -38,6 +38,11 @@ export const useChaptersStore = defineStore('chapters', () => {
     return api.chapters.submit(id, { userCode })
   }
 
+  async function fetchSolution(id: string): Promise<string> {
+    const r = await api.chapters.solution(id)
+    return r.code
+  }
+
   async function reset() {
     await api.chapters.reset()
     await fetchList()
@@ -47,16 +52,14 @@ export const useChaptersStore = defineStore('chapters', () => {
     return list.value.find((c) => c.id === id)
   }
 
-  // Optimistic UI: flip the local chapter's completed flag and unlock
-  // the next one. fetchList() later reconciles if needed.
+  // Optimistic UI: flip the local chapter's completed flag so the ✓ badge
+  // shows immediately. fetchList() later reconciles if needed. All chapters
+  // are unlocked up front, so there's no next-chapter unlocking to do.
   function applyPass(id: string) {
     const idx = list.value.findIndex((c) => c.id === id)
     if (idx < 0) return
     list.value[idx] = { ...list.value[idx], completed: true }
-    if (idx + 1 < list.value.length) {
-      list.value[idx + 1] = { ...list.value[idx + 1], unlocked: true }
-    }
   }
 
-  return { list, current, loading, error, fetchList, fetchTemplate, submit, reset, findInList, applyPass }
+  return { list, current, loading, error, fetchList, fetchTemplate, submit, fetchSolution, reset, findInList, applyPass }
 })

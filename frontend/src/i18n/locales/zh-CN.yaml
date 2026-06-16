@@ -10,9 +10,6 @@ sidebar:
     dark: 深色
   locale:
     label: 语言
-  reset:
-    label: 重置进度
-    confirm: 这将清空所有章节的完成记录。确定继续吗？
 chapter:
   locked: 请先完成上一章节
   status:
@@ -33,6 +30,15 @@ output:
   failed: 失败
   duration: '耗时 {ms} 毫秒'
   unlocked_next: 已解锁下一章节
+solution:
+  open: 推荐答案
+  title: 推荐答案
+  subtitle: 一种可行的参考解答——你的写法可能不同，但同样能通过。
+  close: 关闭
+  loading: 加载中…
+  load_error: 加载答案失败
+  copy: 复制
+  copied: 已复制
 errors:
   backend_down: 无法连接到后端服务
   unknown: 出错了

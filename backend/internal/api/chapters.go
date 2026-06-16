@@ -45,7 +45,10 @@ func preferZh(c *gin.Context) bool {
 }
 
 // HandleListChapters — GET /api/chapters
-// Returns all chapters with their completion + unlock state.
+// Returns all chapters with their completion state. All chapters are
+// unlocked from the start — the tutor shows everything up front rather
+// than gating progression, so learners can explore freely. `Completed`
+// still reflects whether the user has ever passed the chapter.
 func HandleListChapters(c *gin.Context, db *sql.DB) {
 	all := chapters.List()
 	completed, err := listCompleted(db)
@@ -56,7 +59,6 @@ func HandleListChapters(c *gin.Context, db *sql.DB) {
 
 	zh := preferZh(c)
 	out := make([]Chapter, 0, len(all))
-	prevCompleted := true // chapter 1 is always unlocked
 	for _, ch := range all {
 		isDone := completed[ch.ID]
 		out = append(out, Chapter{
@@ -65,9 +67,8 @@ func HandleListChapters(c *gin.Context, db *sql.DB) {
 			Description: pickLocale(ch.Description, zh),
 			Ordinal:     ch.Ordinal,
 			Completed:   isDone,
-			Unlocked:    prevCompleted,
+			Unlocked:    true,
 		})
-		prevCompleted = isDone
 	}
 	c.JSON(http.StatusOK, out)
 }
@@ -122,6 +123,24 @@ func HandleGetHint(c *gin.Context, db *sql.DB) {
 		text = h.Hint.Zh
 	}
 	c.JSON(http.StatusOK, HintResponse{Text: text})
+}
+
+// HandleGetSolution — GET /api/chapters/:id/solution
+// Returns the reference solution's source for on-demand viewing in the
+// chapter detail view's answer modal.
+func HandleGetSolution(c *gin.Context, db *sql.DB) {
+	id := c.Param("id")
+	ch, ok := chapters.Get(id)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"error": "unknown chapter"})
+		return
+	}
+	code, err := ch.SolutionCode()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, SolutionResponse{Code: code})
 }
 
 // HandleReset — POST /api/reset

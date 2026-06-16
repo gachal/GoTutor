@@ -48,6 +48,9 @@ func (s *Server) RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/chapters/:id/hint", func(c *gin.Context) {
 		api.HandleGetHint(c, db)
 	})
+	r.GET("/api/chapters/:id/solution", func(c *gin.Context) {
+		api.HandleGetSolution(c, db)
+	})
 	r.POST("/api/chapters/:id/submit", func(c *gin.Context) {
 		api.HandleSubmit(c, db, s.cfg.GoBinary)
 	})

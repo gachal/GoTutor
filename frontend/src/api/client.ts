@@ -4,6 +4,7 @@ import type {
   Template,
   SubmitResult,
   HintResponse,
+  SolutionResponse,
   SubmitRequest,
   HealthResponse,
 } from './types'
@@ -52,6 +53,9 @@ export const api = {
       return instance
         .get(`/chapters/${encodeURIComponent(id)}/hint`, { params: { line } })
         .then((r) => r.data)
+    },
+    solution(id: string): Promise<SolutionResponse> {
+      return instance.get(`/chapters/${encodeURIComponent(id)}/solution`).then((r) => r.data)
     },
     submit(id: string, body: SubmitRequest): Promise<SubmitResult> {
       return instance.post(`/chapters/${encodeURIComponent(id)}/submit`, body).then((r) => r.data)

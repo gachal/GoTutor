@@ -34,7 +34,14 @@ const emit = defineEmits<{
 const theme = useThemeStore()
 const editorRef = shallowRef<editor.IStandaloneCodeEditor>()
 const monacoRef = shallowRef<typeof Monaco>()
+const editorBodyRef = ref<HTMLElement | null>(null)
 const decorations = ref<string[]>([])
+// roRef keeps Monaco's layout in sync with its container. Monaco's built-in
+// automaticLayout reliably grows the editor but often misses SHRINK events
+// (e.g. when the answer drawer appears and the flex column narrows), leaving
+// the editor pinned at its old width and crowding out the drawer. Our own
+// ResizeObserver forces an explicit editor.layout() on every size change.
+let roRef: ResizeObserver | null = null
 
 const value = computed({
   get: () => props.modelValue,
@@ -86,12 +93,25 @@ function applyDecorations() {
   decorations.value = ed.deltaDecorations(decorations.value, newDecos)
 }
 
+function setupResizeObserver(ed: editor.IStandaloneCodeEditor) {
+  const el = editorBodyRef.value
+  if (!el || typeof ResizeObserver === 'undefined') return
+  roRef?.disconnect()
+  roRef = new ResizeObserver(() => {
+    // Explicit dimensions force Monaco to re-measure on BOTH grow and shrink;
+    // the no-arg layout() can ignore shrink in flex contexts.
+    ed.layout({ width: el.clientWidth, height: el.clientHeight })
+  })
+  roRef.observe(el)
+}
+
 function handleMount(ed: editor.IStandaloneCodeEditor, monaco: typeof Monaco) {
   editorRef.value = ed
   monacoRef.value = monaco
   defineThemes(monaco)
   applyTheme()
   applyDecorations()
+  setupResizeObserver(ed)
 
   // ⌘/Ctrl+Enter to submit.
   ed.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => emit('submit'))
@@ -102,6 +122,8 @@ watch(() => props.modelValue, applyDecorations)
 watch(() => theme.isDark, applyTheme)
 
 onBeforeUnmount(() => {
+  roRef?.disconnect()
+  roRef = null
   editorRef.value?.dispose()
 })
 </script>
@@ -117,11 +139,11 @@ onBeforeUnmount(() => {
       >
         <span v-if="submitting" class="spinner" aria-hidden="true">···</span>
         <template v-else>▶</template>
-        <span class="submit-label">{{ submitting ? '' : '' }}</span>
+        <span class="submit-label">{{ submitting ? $t('editor.submitting') : $t('editor.submit') }}</span>
       </button>
       <span class="hint">{{ todos.length }} TODOs · ⌘/Ctrl+Enter</span>
     </div>
-    <div class="editor-body">
+    <div ref="editorBodyRef" class="editor-body">
       <VueMonacoEditor
         :value="value"
         theme="vs"
@@ -198,7 +220,7 @@ onBeforeUnmount(() => {
 }
 .editor-body {
   height: 100%;
-  min-height: 360px;
+  min-height: 0;
   text-align: left;
 }
 </style>

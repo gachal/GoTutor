@@ -53,3 +53,10 @@ type SubmitResult struct {
 type HintResponse struct {
 	Text string `json:"text"`
 }
+
+// SolutionResponse is the body of GET /api/chapters/:id/solution. Code is
+// the reference solution's raw Go source, shown on demand in the chapter
+// detail view's answer modal.
+type SolutionResponse struct {
+	Code string `json:"code"`
+}

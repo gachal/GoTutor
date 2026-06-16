@@ -1,26 +1,26 @@
 <script setup lang="ts">
 import { onMounted, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useThemeStore } from './stores/theme'
 import { useLocaleStore } from './stores/locale'
 import { useChaptersStore } from './stores/chapters'
 import { setI18nLocale } from './i18n'
 
-const { t } = useI18n()
 const theme = useThemeStore()
 const locale = useLocaleStore()
 const chapters = useChaptersStore()
 
-watch(() => locale.locale, (l) => setI18nLocale(l), { immediate: true })
+// When the language changes: switch static UI strings, point API requests
+// at the new locale (Accept-Language), AND re-fetch the chapter list so the
+// titles/descriptions (which the backend localizes server-side) refresh.
+// Detail-page template re-fetch is handled per-view in ChapterView.vue.
+watch(() => locale.locale, (l) => {
+  setI18nLocale(l)
+  chapters.fetchList()
+}, { immediate: true })
 
 onMounted(() => {
   chapters.fetchList()
 })
-
-async function confirmReset() {
-  if (!window.confirm(t('sidebar.reset.confirm'))) return
-  await chapters.reset()
-}
 </script>
 
 <template>
@@ -65,32 +65,16 @@ async function confirmReset() {
           <li
             v-for="ch in chapters.list"
             :key="ch.id"
-            :class="['chapter-item', { locked: !ch.unlocked, completed: ch.completed }]"
+            :class="['chapter-item', { completed: ch.completed }]"
           >
-            <router-link
-              v-if="ch.unlocked"
-              :to="`/chapter/${ch.id}`"
-              class="chapter-link"
-            >
+            <router-link :to="`/chapter/${ch.id}`" class="chapter-link">
               <span class="ord">{{ ch.ordinal }}</span>
               <span class="title">{{ ch.title }}</span>
               <span v-if="ch.completed" class="badge" aria-label="completed">✓</span>
             </router-link>
-            <div v-else class="chapter-link disabled" :title="$t('chapter.locked')">
-              <span class="ord">🔒</span>
-              <span class="title">{{ ch.title }}</span>
-            </div>
           </li>
         </ul>
       </nav>
-
-      <footer class="sidebar-footer">
-        <button
-          class="reset-btn"
-          type="button"
-          @click="confirmReset"
-        >{{ $t('sidebar.reset.label') }}</button>
-      </footer>
     </aside>
 
     <main class="content">
@@ -209,11 +193,6 @@ async function confirmReset() {
   color: var(--accent);
 }
 
-.chapter-link.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .ord {
   display: inline-grid;
   place-items: center;
@@ -236,25 +215,6 @@ async function confirmReset() {
 .badge {
   color: var(--success);
   font-weight: 700;
-}
-
-.sidebar-footer {
-  border-top: 1px solid var(--border);
-  padding-top: var(--space-3);
-}
-
-.reset-btn {
-  background: transparent;
-  color: var(--fg-muted);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--space-2) var(--space-3);
-  width: 100%;
-  font-size: var(--text-sm);
-}
-.reset-btn:hover {
-  background: var(--surface-2);
-  color: var(--danger);
 }
 
 .content {

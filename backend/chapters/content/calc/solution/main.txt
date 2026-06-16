@@ -1,7 +1,4 @@
 // Reference solution for Chapter 1: CLI Calculator.
-// Embedded for CI (verifies the chapter is solvable) and as a teacher's
-// reference. NEVER returned by any API endpoint — the learner earns the
-// answer by completing the chapter.
 package main
 
 import (

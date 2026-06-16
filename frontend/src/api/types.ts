@@ -35,6 +35,10 @@ export interface HintResponse {
   text: string
 }
 
+export interface SolutionResponse {
+  code: string
+}
+
 export interface HealthResponse {
   ok: boolean
   port: number
