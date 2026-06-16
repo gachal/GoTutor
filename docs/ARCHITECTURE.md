@@ -1,5 +1,7 @@
 # GoTutor Architecture
 
+> English | [中文](ARCHITECTURE-zh.md)
+
 GoTutor teaches Go by having learners fill `// TODO` gaps in real
 mini-projects. The app verifies solutions by **actually compiling and
 running the learner's Go code** with `go test` — never by string
@@ -121,7 +123,8 @@ with `${os}-${arch}` substitution.
 
 ## What's NOT in v1
 
-- 2 chapters only (calc, urlcheck). Adding more: see
+- 11 chapters (calc, urlcheck + 9 advanced drawn from the AiDeptus gateway
+  patterns). Adding more: see
   [ADDING_A_CHAPTER.md](./ADDING_A_CHAPTER.md).
 - Unsigned macOS builds (Gatekeeper bypass documented in README).
 - Windows-specific resource limits (RLIMIT is Linux/BSD only). See

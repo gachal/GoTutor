@@ -1,18 +1,24 @@
 # GoTutor
 
+> English | [中文](README-zh.md)
+
 An interactive desktop app for learning Go by filling in `// TODO` gaps
 in real mini-projects. The app actually compiles and runs your code with
 `go test` — no string matching.
 
 ## Status
 
-v1 ships two chapters end-to-end:
-1. **CLI Calculator** (`calc`) — `os.Args`, `strconv.ParseFloat`,
-   switch dispatch, division-by-zero handling.
-2. **Concurrent URL Checker** (`urlcheck`) — goroutines, channels,
-   `sync.WaitGroup`, `net/http` client.
+Ships **eleven chapters** end-to-end:
+- **Two foundational chapters** — `calc` (CLI calculator: `os.Args`,
+  `strconv`, switch dispatch, division-by-zero) and `urlcheck`
+  (concurrent URL checker: goroutines, channels, `sync.WaitGroup`,
+  `net/http` client).
+- **Nine advanced chapters** drawn from the Go patterns used in a real
+  LLM API gateway (AiDeptus): error handling, interfaces & strategy,
+  concurrent sum, channels & select, context cancellation, token-bucket
+  rate limiting, circuit breaker, HTTP retry & backoff, and SSE streaming.
 
-Both play through the full Monaco editor + sandboxed `go test` flow.
+All play through the full Monaco editor + sandboxed `go test` flow.
 
 ## Stack
 
@@ -91,7 +97,7 @@ to all four targets without a C toolchain per OS.
 - [Security model](docs/SECURITY.md) — what the sandbox defends against,
   residual risks, future hardening (RLIMIT, Docker).
 - [Adding a chapter](docs/ADDING_A_CHAPTER.md) — write your own
-  exercises.
+  exercises (9 advanced chapters already cover gateway patterns).
 
 ## License
 

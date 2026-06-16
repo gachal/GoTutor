@@ -7,8 +7,9 @@ with code in this repository.
 
 GoTutor v1 is a working cross-platform desktop app for learning Go via
 `// TODO` mini-projects. Backend, frontend, and Electron shell are all
-wired end-to-end; both shipped chapters (calc, urlcheck) play through
-the full Monaco + sandboxed-go-test flow.
+wired end-to-end; all eleven chapters (calc, urlcheck + 9 advanced drawn
+from the AiDeptus gateway patterns) play through the full Monaco +
+sandboxed-go-test flow.
 
 Read the docs first when picking up context:
 - [docs/PACKAGING.md](docs/PACKAGING.md) — build `.dmg`/`.exe`/`.AppImage`, Gatekeeper bypass, troubleshooting
@@ -48,7 +49,7 @@ electron/     Electron main process
     preload.ts       exposes window.gotutor diagnostics
   electron-builder.yml
 
-docs/         ARCHITECTURE.md, SECURITY.md, ADDING_A_CHAPTER.md
+docs/         ARCHITECTURE.md, SECURITY.md, ADDING_A_CHAPTER.md, PACKAGING.md
 ```
 
 ## Build / run / test commands

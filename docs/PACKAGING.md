@@ -1,5 +1,7 @@
 # Packaging GoTutor for macOS
 
+> English | [中文](PACKAGING-zh.md)
+
 End-to-end guide for building a runnable `.dmg` from source.
 
 ## One-command build (recommended)

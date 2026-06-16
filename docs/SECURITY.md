@@ -1,5 +1,7 @@
 # GoTutor Security Model
 
+> English | [中文](SECURITY-zh.md)
+
 GoTutor runs user-submitted Go code via `go test`. That code is
 untrusted by definition — a learner might paste anything. This document
 explains what v1 defends against, what it doesn't, and the future

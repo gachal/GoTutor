@@ -1,11 +1,14 @@
 # Adding a Chapter
 
+> English | [中文](ADDING_A_CHAPTER-zh.md)
+
 A chapter is a single learning unit with:
 - a **template** — Go skeleton shown to the learner, with `// TODO` markers
 - **hints** — bilingual (zh + en) text for each TODO line
 - **tests** — `go test` cases the learner's code must pass
-- **solution** — reference (for CI to prove the chapter is solvable; never
-  surfaced through the API)
+- **solution** — reference solution, surfaced to the learner on demand via
+  the `GET /api/chapters/:id/solution` endpoint (shown in the chapter detail
+  view's "Recommended answer" modal)
 
 This document walks through adding Chapter 3: a `time` package exercise.
 
@@ -108,9 +111,10 @@ func TestFormatDuration(t *testing.T) {
 
 ## 6. Write the solution
 
-Drop your reference solution in `solution/main.txt`. The CI workflow
-(Phase 12+) compiles it + runs the tests to verify the chapter is
-solvable. NEVER surface this file through any API endpoint.
+Drop your reference solution in `solution/main.txt`. It is served to
+learners on demand via `GET /api/chapters/:id/solution` (the "Recommended
+answer" modal in the chapter detail view), and CI can compile it + run the
+tests to verify the chapter is solvable.
 
 ## 7. Register the chapter
 
@@ -133,8 +137,10 @@ Edit `backend/chapters/registry.go`. Append to the `registry` slice:
 },
 ```
 
-Ordinal drives unlock gating: chapter N is unlocked iff chapter N-1 has
-`progress.completed_at != NULL`.
+All chapters are unlocked from the start — learners can explore any chapter
+freely (see `HandleListChapters` in `internal/api/chapters.go`, where
+`Unlocked` is always `true`). `Ordinal` only controls display order and
+sorting. `Completed` still reflects whether the user has ever passed.
 
 ## 8. Test end-to-end
 
@@ -158,8 +164,8 @@ curl -X POST localhost:8081/api/chapters/time/submit \
   -H 'Content-Type: application/json' -d "$SOLUTION"
 ```
 
-The response should have `passed: true` and the next chapter (if any)
-should unlock.
+The response should have `passed: true` and the chapter's `completed` flag
+should flip (all chapters are already unlocked from the start).
 
 ## 9. Verify the AST policy
 
