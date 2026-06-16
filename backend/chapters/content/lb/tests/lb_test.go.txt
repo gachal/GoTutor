@@ -1,0 +1,63 @@
+package main
+
+import (
+	"testing"
+)
+
+// Compile-time check that the learner actually defined the interface and
+// that both concrete types satisfy it. If these don't compile, the whole
+// test file fails to build → go test fails.
+var _ Selector = (*RoundRobin)(nil)
+var _ Selector = (*Weighted)(nil)
+
+// TestRoundRobin expects strict in-order cycling across two servers,
+// wrapping at the end. Mirrors AiDeptus RoundRobinBalancer.index.
+func TestRoundRobin(t *testing.T) {
+	servers := []Server{{ID: "a"}, {ID: "b"}}
+	rr := &RoundRobin{}
+
+	want := []string{"a", "b", "a", "b", "a"}
+	for i, w := range want {
+		got := rr.Next(servers)
+		if got.ID != w {
+			t.Fatalf("call %d: got %q, want %q", i, got.ID, w)
+		}
+	}
+}
+
+// TestRoundRobinEmpty returns the zero Server for empty input, never panics.
+func TestRoundRobinEmpty(t *testing.T) {
+	rr := &RoundRobin{}
+	if got := rr.Next(nil); got.ID != "" {
+		t.Errorf("empty input: got %q, want zero Server", got.ID)
+	}
+}
+
+// TestWeighted checks that a weight-3 server is picked exactly 3x as often
+// as a weight-1 server over a full cycle of 4 picks.
+func TestWeighted(t *testing.T) {
+	servers := []Server{{ID: "big", Weight: 3}, {ID: "small", Weight: 1}}
+	w := &Weighted{}
+
+	counts := map[string]int{}
+	for i := 0; i < 4; i++ {
+		counts[w.Next(servers).ID]++
+	}
+	if counts["big"] != 3 {
+		t.Errorf("big weight=3: picked %d times, want 3 (counts=%v)", counts["big"], counts)
+	}
+	if counts["small"] != 1 {
+		t.Errorf("small weight=1: picked %d times, want 1 (counts=%v)", counts["small"], counts)
+	}
+}
+
+// TestWeightedRepeatsCycles confirms the expansion repeats every cycle.
+func TestWeightedRepeatsCycles(t *testing.T) {
+	servers := []Server{{ID: "x", Weight: 2}}
+	w := &Weighted{}
+	for i := 0; i < 5; i++ {
+		if got := w.Next(servers); got.ID != "x" {
+			t.Errorf("single server: got %q, want x", got.ID)
+		}
+	}
+}

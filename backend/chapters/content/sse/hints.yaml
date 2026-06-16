@@ -1,0 +1,14 @@
+# hints.yaml — per-TODO hint text for the SSE Streaming chapter.
+todos:
+  - line: 29
+    hint:
+      zh: 'flusher, ok := w.(http.Flusher)；若 !ok 返回 fmt.Errorf("response writer does not support flushing")。Flusher 是逐块即时推送的关键——不 flush 的话数据会缓冲，用户看不到实时 token。'
+      en: 'flusher, ok := w.(http.Flusher); if !ok return fmt.Errorf("response writer does not support flushing"). Flusher is what makes chunk-by-chunk pushing possible — without Flush() data buffers and the user sees nothing until the end.'
+  - line: 32
+    hint:
+      zh: '用 http.NewRequestWithContext(ctx, "GET", upstreamURL, nil) 建请求（ctx 让客户端断开能中断上游），设 Accept: text/event-stream，http.DefaultClient.Do 发出；有 error 就 return。defer resp.Body.Close()。'
+      en: 'Build req with http.NewRequestWithContext(ctx, GET, upstreamURL, nil) (ctx lets a client disconnect abort the upstream), set Accept: text/event-stream, call http.DefaultClient.Do; return on error. defer resp.Body.Close().'
+  - line: 36
+    hint:
+      zh: '设响应头 Content-Type: text/event-stream、Cache-Control: no-cache，然后 reader := bufio.NewReader(resp.Body) 循环 ReadString 换行符：非空行就 w.Write + flusher.Flush()；遇到 io.EOF 时 return nil；循环开头检查 ctx.Err() 非空则提前返回。'
+      en: 'Set headers Content-Type text/event-stream + Cache-Control no-cache, then reader := bufio.NewReader(resp.Body) and loop ReadString(newline): write each non-empty line + flusher.Flush(); on io.EOF return nil; check ctx.Err() at the top of each loop to bail out early.'

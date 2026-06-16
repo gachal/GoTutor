@@ -1,0 +1,14 @@
+# hints.yaml — per-TODO hint text for the Channels & select chapter.
+todos:
+  - line: 20
+    hint:
+      zh: '用 go func(){ defer close(ch); for _, v := range in { ch <- v } }() 启动生产者。close(ch) 让消费方的 <-ch 返回零值且 ok=false，从而知道流结束。'
+      en: 'Launch the producer with go func(){ defer close(ch); for _, v := range in { ch <- v } }(). close(ch) makes the consumer receive the zero value with ok=false, signalling end-of-stream.'
+  - line: 24
+    hint:
+      zh: 'for { select { case v, ok := <-ch: if !ok { return out }; out = append(out, v) case <-ctx.Done(): return out } }。两个 case 分别处理收到值和 ctx 被取消。'
+      en: 'Loop with for { select { case v, ok := <-ch: if !ok { return out }; out = append(out, v) case <-ctx.Done(): return out } }. The two cases handle got-a-value and ctx-cancelled.'
+  - line: 27
+    hint:
+      zh: 'ctx.Done() 触发时直接 return out（当前已收集的部分）；ch 关闭且读完（!ok）时返回完整 out。两者都在上面的 select 里处理。'
+      en: 'On ctx.Done(), return out (whatever was collected so far); when ch is closed and drained (!ok), return the full out. Both are handled inside the select above.'

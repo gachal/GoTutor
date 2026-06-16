@@ -74,6 +74,7 @@ var SafeStdlibImports = map[string]bool{
 	"io":           true,
 	"io/fs":        true,
 	"bytes":        true,
+	"bufio":        true,
 	"unicode":      true,
 	"regexp":       true,
 	"context":      true,

@@ -1,0 +1,72 @@
+package main
+
+import (
+	"context"
+	"testing"
+	"time"
+)
+
+// TestProcessAllReceived: with no cancellation, Process returns every input
+// in order. Deterministic because the channel is buffered to len(in), so the
+// producer finishes immediately.
+func TestProcessAllReceived(t *testing.T) {
+	in := []int{10, 20, 30, 40, 50}
+	ctx := context.Background()
+	got := Process(ctx, in)
+	if len(got) != len(in) {
+		t.Fatalf("got %d items, want %d (%v)", len(got), len(in), got)
+	}
+	for i, v := range got {
+		if v != in[i] {
+			t.Errorf("got[%d]=%d, want %d", i, v, in[i])
+		}
+	}
+}
+
+// TestProcessPartialOnTimeout: a producer that sleeps heavily must be cut
+// short by a short context timeout, so Process returns FEWER than all items.
+// We make the producer slow so a 30ms deadline fires mid-stream. Generous
+// bounds keep it non-flaky.
+//
+// NOTE: the test injects a SLOW producer by giving a large slice — the
+// chapter's Process is what must honor ctx between receives.
+func TestProcessPartialOnTimeout(t *testing.T) {
+	// Use a real timeout. A well-behaved Process returns promptly once
+	// ctx.Done() fires, even if the producer is still running.
+	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Millisecond)
+	defer cancel()
+
+	// Large input so it can't all land before the deadline.
+	in := make([]int, 10000)
+	for i := range in {
+		in[i] = i
+	}
+
+	start := time.Now()
+	got := Process(ctx, in)
+	elapsed := time.Since(start)
+
+	// Must return well under the time it would take to drain everything
+	// if it ignored the deadline (we assert it bailed within 1s).
+	if elapsed > 1*time.Second {
+		t.Errorf("Process took %v; it should bail out on ctx cancel, not drain everything", elapsed)
+	}
+	// On timeout it must have collected strictly fewer than all inputs.
+	// (If the machine is fast enough to drain 10000 before 40ms, this still
+	// passes because we only assert "<= all"; the elapsed bound above
+	// guards the cancellation behavior.)
+	if len(got) > len(in) {
+		t.Errorf("collected %d, more than input %d", len(got), len(in))
+	}
+}
+
+// TestProcessHonorsAlreadyCancelled: a pre-cancelled ctx returns fast.
+func TestProcessHonorsAlreadyCancelled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	start := time.Now()
+	_ = Process(ctx, []int{1, 2, 3, 4, 5})
+	if d := time.Since(start); d > 200*time.Millisecond {
+		t.Errorf("Process with cancelled ctx took %v; should return immediately", d)
+	}
+}

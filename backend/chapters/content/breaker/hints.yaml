@@ -1,0 +1,14 @@
+# hints.yaml — per-TODO hint text for the Circuit Breaker chapter.
+todos:
+  - line: 25
+    hint:
+      zh: 'func (s State) String() string 用 switch s { case Closed: return "closed"; case Open: return "open"; case HalfOpen: return "halfopen" }。'
+      en: 'Implement func (s State) String() string with a switch: Closed to closed, Open to open, HalfOpen to halfopen.'
+  - line: 46
+    hint:
+      zh: 'if b.state == Open && !b.openedAt.IsZero() && now.Sub(b.openedAt) >= b.cooldown { b.state = HalfOpen }。冷却期满就从 Open 转 HalfOpen，允许一次试探请求。最后 return b.state != Open, b.state。'
+      en: 'if b.state == Open && !b.openedAt.IsZero() && now.Sub(b.openedAt) >= b.cooldown { b.state = HalfOpen } — the cooldown elapsing flips Open to HalfOpen for one trial. Then return b.state != Open, b.state.'
+  - line: 58
+    hint:
+      zh: 'switch b.state：Closed 时 success 重置 failures=0，failure 则 failures++，达到 threshold 转 Open 并记 openedAt=now；HalfOpen 时 success 转 Closed 重置，failure 转 Open 记 openedAt。Open 时忽略。'
+      en: 'switch b.state: in Closed, success resets failures=0; failure bumps failures and trips to Open (stamp openedAt=now) at threshold. In HalfOpen, success to Closed (reset), failure to Open (stamp openedAt). Ignore in Open.'

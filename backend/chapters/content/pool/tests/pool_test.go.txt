@@ -1,0 +1,56 @@
+package main
+
+import (
+	"math/rand"
+	"testing"
+)
+
+func serialSum(nums []int) int {
+	s := 0
+	for _, n := range nums {
+		s += n
+	}
+	return s
+}
+
+// TestSumCorrectnessSmall checks known small inputs across worker counts.
+func TestSumCorrectnessSmall(t *testing.T) {
+	cases := [][]int{
+		{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+		{-5, 5, -5, 5, -5, 5},
+		{42},
+		{},
+	}
+	for _, nums := range cases {
+		want := serialSum(nums)
+		for _, workers := range []int{1, 2, 4, 8} {
+			if got := SumConcurrent(nums, workers); got != want {
+				t.Errorf("nums=%v workers=%d: got %d, want %d", nums, workers, got, want)
+			}
+		}
+	}
+}
+
+// TestSumCorrectnessLarge stress-tests with a big random slice and many
+// workers to catch data races on the shared total. Run with -race in CI.
+func TestSumCorrectnessLarge(t *testing.T) {
+	rng := rand.New(rand.NewSource(1))
+	nums := make([]int, 10000)
+	for i := range nums {
+		nums[i] = rng.Intn(1000) - 500
+	}
+	want := serialSum(nums)
+	for _, workers := range []int{1, 3, 7, 16} {
+		if got := SumConcurrent(nums, workers); got != want {
+			t.Errorf("workers=%d: got %d, want %d", workers, got, want)
+		}
+	}
+}
+
+// TestSumClampsWorkers ensures workers<1 doesn't panic and still sums.
+func TestSumClampsWorkers(t *testing.T) {
+	nums := []int{1, 2, 3}
+	if got := SumConcurrent(nums, 0); got != 6 {
+		t.Errorf("workers=0: got %d, want 6", got)
+	}
+}

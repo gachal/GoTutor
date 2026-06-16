@@ -1,0 +1,71 @@
+// Reference solution for Chapter 9: Circuit Breaker.
+package main
+
+import (
+	"time"
+)
+
+type State int
+
+const (
+	Closed State = iota
+	Open
+	HalfOpen
+)
+
+func (s State) String() string {
+	switch s {
+	case Closed:
+		return "closed"
+	case Open:
+		return "open"
+	case HalfOpen:
+		return "halfopen"
+	}
+	return "unknown"
+}
+
+type Breaker struct {
+	failureThreshold int
+	cooldown         time.Duration
+
+	state    State
+	failures int
+	openedAt time.Time
+}
+
+func NewBreaker(failureThreshold int, cooldown time.Duration) *Breaker {
+	return &Breaker{failureThreshold: failureThreshold, cooldown: cooldown, state: Closed}
+}
+
+func (b *Breaker) Allow(now time.Time) (bool, State) {
+	if b.state == Open && !b.openedAt.IsZero() && now.Sub(b.openedAt) >= b.cooldown {
+		b.state = HalfOpen
+	}
+	return b.state != Open, b.state
+}
+
+func (b *Breaker) RecordResult(now time.Time, success bool) {
+	switch b.state {
+	case Closed:
+		if success {
+			b.failures = 0
+			return
+		}
+		b.failures++
+		if b.failures >= b.failureThreshold {
+			b.state = Open
+			b.openedAt = now
+		}
+	case HalfOpen:
+		if success {
+			b.state = Closed
+			b.failures = 0
+		} else {
+			b.state = Open
+			b.openedAt = now
+		}
+	}
+}
+
+func main() {}

@@ -1,0 +1,44 @@
+// Reference solution for Chapter 5: Concurrent Sum.
+package main
+
+import (
+	"sync"
+)
+
+func SumConcurrent(nums []int, workers int) int {
+	if workers < 1 {
+		workers = 1
+	}
+	var (
+		total int
+		mu    sync.Mutex
+		wg    sync.WaitGroup
+	)
+	chunk := (len(nums) + workers - 1) / workers
+
+	for w := 0; w < workers; w++ {
+		start := w * chunk
+		if start >= len(nums) {
+			break
+		}
+		end := start + chunk
+		if end > len(nums) {
+			end = len(nums)
+		}
+		wg.Add(1)
+		go func(s, e int) {
+			defer wg.Done()
+			partial := 0
+			for i := s; i < e; i++ {
+				partial += nums[i]
+			}
+			mu.Lock()
+			total += partial
+			mu.Unlock()
+		}(start, end)
+	}
+	wg.Wait()
+	return total
+}
+
+func main() {}

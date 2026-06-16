@@ -1,0 +1,52 @@
+// Reference solution for Chapter 4: Interfaces & Strategy.
+package main
+
+type Server struct {
+	ID     string
+	Weight int
+}
+
+type Selector interface {
+	Next(servers []Server) Server
+}
+
+var _ Selector = (*RoundRobin)(nil)
+var _ Selector = (*Weighted)(nil)
+
+type RoundRobin struct {
+	cursor int
+}
+
+func (r *RoundRobin) Next(servers []Server) Server {
+	if len(servers) == 0 {
+		return Server{}
+	}
+	s := servers[r.cursor%len(servers)]
+	r.cursor++
+	return s
+}
+
+type Weighted struct {
+	cursor   int
+	expanded []Server
+}
+
+func (w *Weighted) Next(servers []Server) Server {
+	w.expanded = w.expanded[:0]
+	for _, s := range servers {
+		if s.Weight <= 0 {
+			continue
+		}
+		for i := 0; i < s.Weight; i++ {
+			w.expanded = append(w.expanded, s)
+		}
+	}
+	if len(w.expanded) == 0 {
+		return Server{}
+	}
+	s := w.expanded[w.cursor%len(w.expanded)]
+	w.cursor++
+	return s
+}
+
+func main() {}

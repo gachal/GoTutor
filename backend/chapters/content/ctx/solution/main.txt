@@ -1,0 +1,27 @@
+// Reference solution for Chapter 7: context Cancellation.
+package main
+
+import (
+	"context"
+	"time"
+)
+
+func RunWithTimeout(ctx context.Context, timeout time.Duration, work func(context.Context) error) error {
+	child, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	_ = work(child)
+	return child.Err()
+}
+
+func Slow(ctx context.Context, ticks int) error {
+	for i := 0; i < ticks; i++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(5 * time.Millisecond):
+		}
+	}
+	return nil
+}
+
+func main() {}

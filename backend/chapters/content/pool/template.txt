@@ -1,0 +1,40 @@
+// Chapter 5: Concurrent Sum — initial skeleton.
+// A gateway batches work across goroutines and merges the results under a
+// mutex (see AiDeptus's load-test worker pool). Here you split a slice
+// across N workers, each summing its chunk, then merge under a mutex.
+package main
+
+import (
+	"sync"
+)
+
+// SumConcurrent splits nums into `workers` contiguous chunks, launches one
+// goroutine per chunk that sums it, and returns the merged total. The result
+// must always equal the serial sum — the test checks correctness, and with
+// workers>1 it can only pass if you actually used goroutines safely.
+func SumConcurrent(nums []int, workers int) int {
+	if workers < 1 {
+		workers = 1
+	}
+	var (
+		total int
+		mu    sync.Mutex
+		wg    sync.WaitGroup
+	)
+	chunk := (len(nums) + workers - 1) / workers
+
+	// TODO 1: for each worker w in [0, workers), compute its slice range
+	//   [start, end) — start = w*chunk, end = min(start+chunk, len(nums)).
+	//   Add to the WaitGroup once per worker before launching it.
+
+	// TODO 2: launch a goroutine per worker that sums nums[start:end] and
+	//   then merges into `total`. Guard the merge with mu.Lock/Unlock.
+	//   Call wg.Done() when done (use defer).
+
+	// TODO 3: wait for all workers before returning total.
+	_ = mu
+	_ = total
+	return 0
+}
+
+func main() {}

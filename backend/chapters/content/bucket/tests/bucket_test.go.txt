@@ -1,0 +1,76 @@
+package main
+
+import (
+	"testing"
+	"time"
+)
+
+// TestBurstThenRefill exercises the full lifecycle with injected times:
+// capacity=2 burst → exhausted → wait 1s (rate=2/s → +2) → 2 more allowed.
+// All times are passed in, so there is zero wall-clock dependence.
+func TestBurstThenRefill(t *testing.T) {
+	b := NewTokenBucket(2.0, 2) // 2 tokens/sec, capacity 2
+	t0 := time.Unix(1000, 0)
+
+	// Capacity burst: first two allowed, third denied (bucket empty).
+	if !b.Allow(t0) {
+		t.Fatal("call 1: want allowed")
+	}
+	if !b.Allow(t0) {
+		t.Fatal("call 2: want allowed")
+	}
+	if b.Allow(t0) {
+		t.Fatal("call 3: want denied (bucket empty)")
+	}
+
+	// Advance 1 second → +2 tokens (rate 2/s), capped at capacity 2.
+	t1 := t0.Add(1 * time.Second)
+	if !b.Allow(t1) {
+		t.Fatal("after 1s, call 1: want allowed")
+	}
+	if !b.Allow(t1) {
+		t.Fatal("after 1s, call 2: want allowed")
+	}
+	if b.Allow(t1) {
+		t.Fatal("after 1s, call 3: want denied (refilled to 2, now empty)")
+	}
+}
+
+// TestCapOverflow confirms a long idle doesn't exceed capacity.
+func TestCapOverflow(t *testing.T) {
+	b := NewTokenBucket(10.0, 3) // rate irrelevant; capacity 3
+	t0 := time.Unix(0, 0)
+	_ = b.Allow(t0)
+	// Idle 100s — should refill to at most capacity (3), not 1000.
+	t1 := t0.Add(100 * time.Second)
+	allowed := 0
+	for i := 0; i < 10; i++ {
+		if b.Allow(t1) {
+			allowed++
+		}
+	}
+	// Started with 1 used (2 left), so after refill to 3 there are 3 tokens.
+	if allowed != 3 {
+		t.Errorf("after long idle: allowed %d, want 3 (capacity)", allowed)
+	}
+}
+
+// TestFractionalAccumulates: sub-capacity refill adds fractional tokens
+// that accumulate over multiple close-in-time calls.
+func TestFractionalAccumulates(t *testing.T) {
+	b := NewTokenBucket(10.0, 1) // 10/s, capacity 1
+	t0 := time.Unix(0, 0)
+	b.Allow(t0) // drain the 1 token
+	// 0.1s later → +1 token exactly.
+	if !b.Allow(t0.Add(100 * time.Millisecond)) {
+		t.Fatal("0.1s later: want 1 token available")
+	}
+}
+
+// TestZeroCapacityDenies: capacity 0 (or effectively empty) always denies.
+func TestZeroCapacityDenies(t *testing.T) {
+	b := NewTokenBucket(1.0, 0)
+	if b.Allow(time.Unix(0, 0)) {
+		t.Fatal("capacity 0 should never allow")
+	}
+}

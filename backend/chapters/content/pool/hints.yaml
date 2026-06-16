@@ -1,0 +1,14 @@
+# hints.yaml — per-TODO hint text for the Concurrent Sum chapter.
+todos:
+  - line: 26
+    hint:
+      zh: '用 for w := 0; w < workers; w++ 循环，算 start = w*chunk、end = min(start+chunk, len(nums))；start>=len(nums) 时 break。每个 worker 在启动前调 wg.Add(1)。'
+      en: 'Loop w := 0..workers, compute start = w*chunk and end = min(start+chunk, len(nums)); break when start>=len(nums). Call wg.Add(1) once per worker before launching.'
+  - line: 30
+    hint:
+      zh: '启动 go func(s, e int){...}(start, end)：内部对 nums[s:e] 求和得 partial，再 mu.Lock(); total += partial; mu.Unlock()；defer wg.Done()。闭包要把 s/e 作为参数传入，避免捕获循环变量。'
+      en: 'Launch go func(s, e int){...}(start, end): sum nums[s:e] into partial, then mu.Lock(); total += partial; mu.Unlock(); defer wg.Done(). Pass s/e as args so you do not capture loop variables.'
+  - line: 34
+    hint:
+      zh: '循环结束后调 wg.Wait() 阻塞，直到所有 worker 都 Done，再 return total。'
+      en: 'After the loop, call wg.Wait() to block until every worker is done, then return total.'

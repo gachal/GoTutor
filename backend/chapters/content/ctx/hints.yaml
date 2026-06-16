@@ -1,0 +1,14 @@
+# hints.yaml — per-TODO hint text for the context Cancellation chapter.
+todos:
+  - line: 21
+    hint:
+      zh: '用 child, cancel := context.WithTimeout(ctx, timeout) 派生子上下文，并 defer cancel() 释放定时器资源。'
+      en: 'Derive a child with child, cancel := context.WithTimeout(ctx, timeout), and defer cancel() to free the timer.'
+  - line: 23
+    hint:
+      zh: '调用 _ = work(child) 执行任务（忽略其返回的 error），然后 return child.Err()——它会是 nil（按时完成）、DeadlineExceeded（超时）或 Canceled（父级取消）。'
+      en: 'Call _ = work(child) (ignore its returned error), then return child.Err() — which is nil (finished in time), DeadlineExceeded (timed out), or Canceled (parent cancelled).'
+  - line: 33
+    hint:
+      zh: 'for i := 0; i < ticks; i++ 循环，每轮 select { case <-ctx.Done(): return ctx.Err(); case <-time.After(5ms): }。循环全部走完则 return nil。这样慢任务在 ctx 取消时能及时退出。'
+      en: 'Loop for i := 0; i < ticks; i++ with select { case <-ctx.Done(): return ctx.Err(); case <-time.After(5ms): }. Return nil if the loop finishes. This lets the slow task bail out when ctx is cancelled.'

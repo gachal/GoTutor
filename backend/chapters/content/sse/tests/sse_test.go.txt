@@ -1,0 +1,98 @@
+package main
+
+import (
+	"context"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+)
+
+// TestForwardSSE streams 3 lines from an upstream SSE server and checks the
+// forwarded body matches. The downstream is a real httptest server whose
+// handler calls the learner's ForwardSSE — this is necessary because
+// httptest.ResponseRecorder does NOT implement http.Flusher.
+func TestForwardSSE(t *testing.T) {
+	upstreamLines := []string{"data: hello\n", "data: world\n", "data: [DONE]\n"}
+
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		fl, _ := w.(http.Flusher)
+		for _, ln := range upstreamLines {
+			_, _ = io.WriteString(w, ln)
+			if fl != nil {
+				fl.Flush()
+			}
+		}
+	}))
+	defer upstream.Close()
+
+	var captured strings.Builder
+	downstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := ForwardSSE(r.Context(), upstream.URL, w); err != nil {
+			t.Errorf("ForwardSSE returned error: %v", err)
+		}
+	}))
+	defer downstream.Close()
+
+	resp, err := http.Get(downstream.URL)
+	if err != nil {
+		t.Fatalf("downstream GET: %v", err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	captured.Write(body)
+
+	want := strings.Join(upstreamLines, "")
+	if got := captured.String(); got != want {
+		t.Errorf("forwarded body mismatch:\n got %q\nwant %q", got, want)
+	}
+	if ct := resp.Header.Get("Content-Type"); !strings.HasPrefix(ct, "text/event-stream") {
+		t.Errorf("Content-Type = %q, want text/event-stream*", ct)
+	}
+}
+
+// TestForwardSSECtxCancel: cancelling the context mid-stream should make
+// ForwardSSE return promptly (it must be reading with ctx-aware cancellation).
+// The upstream emits one line then blocks on its OWN request context, so when
+// the learner closes the body (on cancel) the connection drops and the
+// upstream handler exits cleanly — no goroutine leak to hang httptest.Close.
+func TestForwardSSECtxCancel(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		fl, _ := w.(http.Flusher)
+		_, _ = io.WriteString(w, "data: start\n")
+		if fl != nil {
+			fl.Flush()
+		}
+		<-r.Context().Done() // block until the downstream disconnects
+	}))
+	defer upstream.Close()
+
+	downstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithCancel(r.Context())
+		go func() {
+			time.Sleep(50 * time.Millisecond)
+			cancel()
+		}()
+		_ = ForwardSSE(ctx, upstream.URL, w)
+	}))
+	defer downstream.Close()
+
+	// Client timeout so the test can't hang if cancellation is broken.
+	client := &http.Client{Timeout: 2 * time.Second}
+	resp, err := client.Get(downstream.URL)
+	if err != nil {
+		t.Fatalf("downstream GET: %v", err)
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	// We should at least have received the first line before cancellation.
+	if !strings.Contains(string(body), "start") {
+		t.Errorf("expected to see 'start' before cancel; got %q", body)
+	}
+}

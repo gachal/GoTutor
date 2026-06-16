@@ -1,0 +1,113 @@
+package main
+
+import (
+	"testing"
+	"time"
+)
+
+// TestStateString checks the String() method used for logging/observability.
+func TestStateString(t *testing.T) {
+	cases := []struct {
+		s    State
+		want string
+	}{
+		{Closed, "closed"},
+		{Open, "open"},
+		{HalfOpen, "halfopen"},
+	}
+	for _, c := range cases {
+		if got := c.s.String(); got != c.want {
+			t.Errorf("%d.String() = %q, want %q", c.s, got, c.want)
+		}
+	}
+}
+
+// newBreaker makes a breaker: 2 failures to open, 5s cooldown.
+func newBreaker() *Breaker { return NewBreaker(2, 5*time.Second) }
+
+// TestClosedAllows: a fresh breaker permits requests.
+func TestClosedAllows(t *testing.T) {
+	b := newBreaker()
+	t0 := time.Unix(0, 0)
+	if ok, st := b.Allow(t0); !ok || st != Closed {
+		t.Fatalf("fresh breaker: ok=%v state=%v, want true/closed", ok, st)
+	}
+}
+
+// TestOpensOnFailures: 2 consecutive failures → Open, then Allow denies.
+func TestOpensOnFailures(t *testing.T) {
+	b := newBreaker()
+	t0 := time.Unix(100, 0)
+	b.RecordResult(t0, false)
+	if b.state != Closed {
+		t.Fatalf("after 1 failure: state=%v, want closed", b.state)
+	}
+	b.RecordResult(t0, false) // threshold reached
+	if b.state != Open {
+		t.Fatalf("after 2 failures: state=%v, want open", b.state)
+	}
+	if ok, _ := b.Allow(t0); ok {
+		t.Fatal("open within cooldown: Allow should deny")
+	}
+}
+
+// TestCooldownToHalfOpen: after the cooldown elapses, Allow permits and
+// transitions to HalfOpen.
+func TestCooldownToHalfOpen(t *testing.T) {
+	b := newBreaker()
+	t0 := time.Unix(0, 0)
+	b.RecordResult(t0, false)
+	b.RecordResult(t0, false) // open at t0
+	if ok, _ := b.Allow(t0); ok {
+		t.Fatal("at t0 (open): should deny")
+	}
+	after := t0.Add(5 * time.Second)
+	ok, st := b.Allow(after)
+	if !ok || st != HalfOpen {
+		t.Fatalf("after cooldown: ok=%v state=%v, want true/halfopen", ok, st)
+	}
+}
+
+// TestHalfOpenSuccessCloses: a successful trial in HalfOpen → Closed, reset.
+func TestHalfOpenSuccessCloses(t *testing.T) {
+	b := newBreaker()
+	t0 := time.Unix(0, 0)
+	b.RecordResult(t0, false)
+	b.RecordResult(t0, false) // open
+	after := t0.Add(6 * time.Second)
+	b.Allow(after) // → halfopen
+	b.RecordResult(after, true)
+	if b.state != Closed {
+		t.Fatalf("halfopen success: state=%v, want closed", b.state)
+	}
+	if b.failures != 0 {
+		t.Fatalf("after close: failures=%d, want 0", b.failures)
+	}
+}
+
+// TestHalfOpenFailureReopens: a failed trial in HalfOpen → Open again.
+func TestHalfOpenFailureReopens(t *testing.T) {
+	b := newBreaker()
+	t0 := time.Unix(0, 0)
+	b.RecordResult(t0, false)
+	b.RecordResult(t0, false) // open
+	after := t0.Add(6 * time.Second)
+	b.Allow(after) // → halfopen
+	b.RecordResult(after, false)
+	if b.state != Open {
+		t.Fatalf("halfopen failure: state=%v, want open", b.state)
+	}
+}
+
+// TestSuccessResetsFailures: a success in Closed clears the failure count so
+// scattered failures don't accumulate into a false trip.
+func TestSuccessResetsFailures(t *testing.T) {
+	b := newBreaker()
+	t0 := time.Unix(0, 0)
+	b.RecordResult(t0, false)
+	b.RecordResult(t0, true) // reset
+	b.RecordResult(t0, false)
+	if b.state != Closed {
+		t.Fatalf("interleaved success: state=%v, want closed (failures reset)", b.state)
+	}
+}

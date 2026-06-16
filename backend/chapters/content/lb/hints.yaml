@@ -1,0 +1,14 @@
+# hints.yaml — per-TODO hint text for the Interfaces & Strategy chapter.
+todos:
+  - line: 13
+    hint:
+      zh: '声明接口 type Selector interface { Next(servers []Server) Server }，并在接口下方加编译期断言 var _ Selector = (*RoundRobin)(nil) 与 (*Weighted)(nil)，确保两个类型都满足接口（不满足就编译失败）。'
+      en: 'Declare type Selector interface { Next(servers []Server) Server }, then add compile-time assertions var _ Selector = (*RoundRobin)(nil) and (*Weighted)(nil) so the build fails unless both types satisfy the interface.'
+  - line: 27
+    hint:
+      zh: '实现 func (r *RoundRobin) Next(servers []Server) Server：若 servers 为空返回零值 Server{}；否则取 servers[r.cursor % len(servers)]，再 r.cursor++ 返回该值。'
+      en: 'Implement func (r *RoundRobin) Next(servers []Server) Server: return the zero Server{} if empty; otherwise return servers[r.cursor % len(servers)] then increment r.cursor.'
+  - line: 38
+    hint:
+      zh: '实现 func (w *Weighted) Next(...)：先把每个 server 按 Weight 追加到 expanded（weight<=0 跳过），再对 expanded 取模轮询（和 RoundRobin 一样）。expanded 为空时返回零值。'
+      en: 'Implement func (w *Weighted) Next(...): build expanded by appending each server Weight times (skip weight<=0), then round-robin over expanded with a modulo cursor (same as RoundRobin). Return the zero Server if expanded is empty.'

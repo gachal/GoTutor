@@ -1,0 +1,32 @@
+// Chapter 3: Error Handling — initial skeleton.
+// Real gateway code (like AiDeptus) wraps errors and classifies them to
+// decide the HTTP status. Here you'll define sentinel errors + a custom
+// error type, then classify a wrapped error chain with errors.Is/As.
+package main
+
+import (
+	"errors"
+	"fmt"
+)
+
+// TODO 1: define sentinel errors with errors.New.
+//   ErrRateLimit      — rate limit exceeded
+//   ErrQuotaExceeded  — daily quota used up
+
+// TODO 2: define a custom error type for a bad request field.
+//   type FieldError struct { Field string }
+//   Implement the Error() method so it returns: fmt.Sprintf("invalid field: %s", e.Field)
+//   (A pointer receiver matches both *FieldError and FieldError when used as an error.)
+
+// TODO 3: implement Classify. It inspects err (which may be wrapped with %w)
+//   and returns one of: "rate_limit", "quota", "bad_field", or "ok".
+//   - Use errors.Is to detect the two sentinels.
+//   - Use errors.As to detect *FieldError anywhere in the chain.
+//   - Otherwise return "ok".
+func Classify(err error) string {
+	_ = errors.Is  // placeholder; remove once used
+	_ = fmt.Sprintf // placeholder; remove once used
+	return "ok"
+}
+
+func main() {}

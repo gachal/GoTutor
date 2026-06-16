@@ -1,0 +1,91 @@
+package main
+
+import (
+	"context"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
+	"testing"
+	"time"
+)
+
+// TestRetrySucceedsOnThirdAttempt: the server returns 503 twice then 200.
+// DoWithRetry must end with a 200 response and have hit the server exactly
+// 3 times. Tiny baseDelay keeps the test fast.
+func TestRetrySucceedsOnThirdAttempt(t *testing.T) {
+	var hits int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		n := atomic.AddInt32(&hits, 1)
+		if n < 3 {
+			w.WriteHeader(http.StatusServiceUnavailable) // 503
+			return
+		}
+		w.WriteHeader(http.StatusOK) // 200
+		_, _ = io.WriteString(w, "ok")
+	}))
+	defer srv.Close()
+
+	resp, err := DoWithRetry(context.Background(), srv.URL, 5, 5*time.Millisecond)
+	if err != nil {
+		t.Fatalf("got err %v, want nil", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want 200", resp.StatusCode)
+	}
+	if got := atomic.LoadInt32(&hits); got != 3 {
+		t.Errorf("server hits = %d, want 3", got)
+	}
+}
+
+// TestRetryExhaustsReturnsLastError: the server always 500s; with maxRetries
+// the loop exhausts and returns the last (500) response.
+func TestRetryExhaustsReturnsLastResponse(t *testing.T) {
+	var hits int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		atomic.AddInt32(&hits, 1)
+		w.WriteHeader(http.StatusInternalServerError) // 500
+	}))
+	defer srv.Close()
+
+	resp, err := DoWithRetry(context.Background(), srv.URL, 2, 5*time.Millisecond)
+	if err != nil {
+		t.Fatalf("got err %v, want nil (last response returned)", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500", resp.StatusCode)
+	}
+	if got := atomic.LoadInt32(&hits); got != 3 { // attempt 0,1,2 = 3 hits
+		t.Errorf("server hits = %d, want 3", got)
+	}
+}
+
+// TestRetryCancelledDuringBackoff: a context cancelled mid-backoff makes
+// DoWithRetry return promptly with ctx.Err(). The server always fails, so the
+// first attempt sleeps; we cancel during that sleep.
+func TestRetryCancelledDuringBackoff(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	// Cancel shortly after the first (failed) attempt starts its backoff.
+	go func() {
+		time.Sleep(20 * time.Millisecond)
+		cancel()
+	}()
+
+	start := time.Now()
+	_, err := DoWithRetry(ctx, srv.URL, 20, 5*time.Second) // huge baseDelay
+	elapsed := time.Since(start)
+
+	if err == nil {
+		t.Fatal("want ctx error, got nil")
+	}
+	if elapsed > 1*time.Second {
+		t.Errorf("took %v; should bail within ~1s of cancel, not wait the 5s backoff", elapsed)
+	}
+}

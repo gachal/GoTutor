@@ -1,0 +1,14 @@
+# hints.yaml — per-TODO hint text for the Token Bucket chapter.
+todos:
+  - line: 24
+    hint:
+      zh: 'return &TokenBucket{ rate: rate, capacity: float64(capacity), tokens: float64(capacity), lastTime: time.Time{} }。桶初始是满的（tokens==capacity），lastTime 留零值表示首次调用。'
+      en: 'return &TokenBucket{ rate: rate, capacity: float64(capacity), tokens: float64(capacity), lastTime: time.Time{} }. The bucket starts full (tokens==capacity); lastTime zero means first call.'
+  - line: 31
+    hint:
+      zh: '若 b.lastTime.IsZero()（首次），只设 b.lastTime = now 不补令牌；否则算 elapsed = now.Sub(b.lastTime).Seconds()，b.tokens += b.rate * elapsed，再封顶到 b.capacity，最后 b.lastTime = now。'
+      en: 'If b.lastTime.IsZero() (first call), just set b.lastTime = now with no refill; otherwise compute elapsed = now.Sub(b.lastTime).Seconds(), b.tokens += b.rate * elapsed, cap at b.capacity, then b.lastTime = now.'
+  - line: 36
+    hint:
+      zh: '若 b.tokens >= 1：b.tokens -= 1 并 return true；否则 return false（令牌不足，拒绝）。'
+      en: 'If b.tokens >= 1: b.tokens -= 1 and return true; otherwise return false (insufficient tokens, deny).'

@@ -1,0 +1,14 @@
+# hints.yaml — per-TODO hint text for the Error Handling chapter.
+todos:
+  - line: 12
+    hint:
+      zh: '用 errors.New 定义两个哨兵错误变量，例如 var ErrRateLimit = errors.New("rate limit exceeded")。哨兵错误是可被 errors.Is 识别的固定错误值。'
+      en: 'Define sentinel errors with errors.New, e.g. var ErrRateLimit = errors.New("rate limit exceeded"). Sentinels are fixed error values that errors.Is can match.'
+  - line: 16
+    hint:
+      zh: '定义带字段的结构体 type FieldError struct { Field string }，并给它实现 *FieldError 的 Error() string 方法（指针接收者），返回 fmt.Sprintf("invalid field: %s", e.Field)。'
+      en: 'Define a struct type FieldError struct { Field string } with an Error() string method on *FieldError (pointer receiver) returning fmt.Sprintf("invalid field: %s", e.Field).'
+  - line: 21
+    hint:
+      zh: '先用 errors.Is(err, ErrRateLimit)/ErrQuotaExceeded 命中哨兵；再用 errors.As(err, &fe)（fe 为 *FieldError）命中自定义类型；都不匹配返回 "ok"。nil 输入也应返回 "ok"。'
+      en: 'Use errors.Is for the two sentinels, then errors.As(err, &fe) with fe as *FieldError to detect the custom type. Fall through to "ok" (including when err is nil).'

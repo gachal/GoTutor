@@ -82,6 +82,103 @@ var registry = []Chapter{
 		AllowImports: []string{"net/http", "sync", "time"},
 		contentDir:   "urlcheck",
 	},
+	// Chapters 3–11 are drawn from the Go knowledge points used in AiDeptus,
+	// an LLM API gateway (../AiDeptus). Each chapter maps to a real pattern
+	// from that codebase: error classification → interface/strategy →
+	// concurrency primitives → rate limiting → circuit breaking → HTTP retry
+	// → SSE streaming.
+	{
+		ID:          "errs",
+		Title:       Locale{Zh: "错误处理", En: "Error Handling"},
+		Description: Locale{
+			Zh: "用哨兵错误、errors.Is/As 和 %w 包裹分类错误链——网关据此映射 HTTP 状态码。",
+			En: "Classify a wrapped error chain with sentinel errors, errors.Is/As, and %w — how a gateway maps errors to HTTP status.",
+		},
+		Ordinal:    3,
+		contentDir: "errs",
+	},
+	{
+		ID:          "lb",
+		Title:       Locale{Zh: "接口与策略模式", En: "Interfaces & Strategy"},
+		Description: Locale{
+			Zh: "定义 Selector 接口，实现轮询与加权轮询两种负载均衡策略。",
+			En: "Define a Selector interface and implement round-robin and weighted load-balancing strategies.",
+		},
+		Ordinal:    4,
+		contentDir: "lb",
+	},
+	{
+		ID:          "pool",
+		Title:       Locale{Zh: "并发求和", En: "Concurrent Sum"},
+		Description: Locale{
+			Zh: "用 goroutine、sync.WaitGroup 和 sync.Mutex 把切片分给多个 worker 并发求和。",
+			En: "Split a slice across goroutines and merge the partial sums with sync.WaitGroup and sync.Mutex.",
+		},
+		Ordinal:    5,
+		contentDir: "pool",
+	},
+	{
+		ID:          "chan",
+		Title:       Locale{Zh: "channel 与 select", En: "Channels & select"},
+		Description: Locale{
+			Zh: "用缓冲 channel 传值，select 同时监听数据与 ctx.Done()，超时提前返回。",
+			En: "Pipe values through a buffered channel, select on both data and ctx.Done(), and bail out on timeout.",
+		},
+		Ordinal:    6,
+		contentDir: "chan",
+	},
+	{
+		ID:          "ctx",
+		Title:       Locale{Zh: "context 超时取消", En: "context Cancellation"},
+		Description: Locale{
+			Zh: "用 context.WithTimeout 派生超时上下文，让慢任务响应 ctx.Done() 并返回 ctx.Err()。",
+			En: "Derive a timeout context with context.WithTimeout and let slow tasks honor ctx.Done() and report ctx.Err().",
+		},
+		Ordinal:    7,
+		contentDir: "ctx",
+	},
+	{
+		ID:          "bucket",
+		Title:       Locale{Zh: "令牌桶限流", En: "Token Bucket Limiter"},
+		Description: Locale{
+			Zh: "手写令牌桶：按速率懒补充令牌、容量封顶，Allow 判断是否放行。",
+			En: "Implement a token bucket by hand: lazy refill at a fixed rate, capacity cap, Allow decides admission.",
+		},
+		Ordinal:    8,
+		contentDir: "bucket",
+	},
+	{
+		ID:          "breaker",
+		Title:       Locale{Zh: "熔断器状态机", En: "Circuit Breaker"},
+		Description: Locale{
+			Zh: "实现 Closed→Open→HalfOpen 熔断状态机，用注入时间驱动确定性转移。",
+			En: "Implement a Closed→Open→HalfOpen circuit breaker, driven by injected time for deterministic transitions.",
+		},
+		Ordinal:    9,
+		contentDir: "breaker",
+	},
+	{
+		ID:          "retry",
+		Title:       Locale{Zh: "HTTP 重试与退避", En: "HTTP Retry & Backoff"},
+		Description: Locale{
+			Zh: "对不稳定的上游做指数退避重试，退避期间 context 取消能立即中断。",
+			En: "Retry a flaky upstream with exponential backoff that bails out the moment context is cancelled.",
+		},
+		Ordinal:      10,
+		AllowImports: []string{"net/http"},
+		contentDir:   "retry",
+	},
+	{
+		ID:          "sse",
+		Title:       Locale{Zh: "SSE 流式转发", En: "SSE Streaming"},
+		Description: Locale{
+			Zh: "用 http.Flusher 逐行转发上游 SSE 流并即时 flush——LLM 网关的看家本领。",
+			En: "Forward an upstream SSE stream line-by-line with http.Flusher — the heart of an LLM gateway.",
+		},
+		Ordinal:      11,
+		AllowImports: []string{"net/http"},
+		contentDir:   "sse",
+	},
 }
 
 // List returns all chapters sorted by Ordinal. The returned slice is a
@@ -111,6 +208,17 @@ func (c Chapter) TemplateCode() (string, error) {
 	b, err := fs.ReadFile(contentFS, c.contentDir+"/template.txt")
 	if err != nil {
 		return "", fmt.Errorf("read template for %s: %w", c.ID, err)
+	}
+	return string(b), nil
+}
+
+// SolutionCode returns the contents of `<contentDir>/solution/main.txt` —
+// the reference solution shown on demand in the chapter detail view. Like
+// the template it ships as .txt to dodge go:embed's .go exclusion.
+func (c Chapter) SolutionCode() (string, error) {
+	b, err := fs.ReadFile(contentFS, c.contentDir+"/solution/main.txt")
+	if err != nil {
+		return "", fmt.Errorf("read solution for %s: %w", c.ID, err)
 	}
 	return string(b), nil
 }

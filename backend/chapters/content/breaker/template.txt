@@ -1,0 +1,63 @@
+// Chapter 9: Circuit Breaker — initial skeleton.
+// AiDeptus tracks upstream health with a Closed→Open→HalfOpen state machine
+// (pkg/loadbalancer/health.go). Here you implement the transitions with
+// injected time so the test is fully deterministic.
+//
+// States:
+//   Closed   — requests allowed; consecutive failures open the breaker
+//   Open     — requests blocked until the cooldown elapses, then HalfOpen
+//   HalfOpen — one trial request allowed; success → Closed, failure → Open
+package main
+
+import (
+	"time"
+)
+
+// State is the breaker's current mode.
+type State int
+
+const (
+	Closed State = iota
+	Open
+	HalfOpen
+)
+
+// TODO 1: implement func (s State) String() string returning
+//   "closed" / "open" / "halfopen".
+
+// Breaker is a per-upstream circuit breaker.
+type Breaker struct {
+	failureThreshold int
+	cooldown         time.Duration
+
+	state      State
+	failures   int
+	openedAt   time.Time
+}
+
+func NewBreaker(failureThreshold int, cooldown time.Duration) *Breaker {
+	return &Breaker{failureThreshold: failureThreshold, cooldown: cooldown, state: Closed}
+}
+
+// Allow reports whether a request is permitted at `now`.
+//   Closed/HalfOpen → true; Open → true only if the cooldown elapsed
+//   (transitioning to HalfOpen), otherwise false.
+func (b *Breaker) Allow(now time.Time) (bool, State) {
+	// TODO 2: if state==Open and now is past openedAt+cooldown, move to
+	//   HalfOpen. Then: return (state != Open, state).
+
+	return false, b.state
+}
+
+// RecordResult reports the outcome of an attempted request.
+//   Closed:    success resets failures; failure bumps them — hitting the
+//              threshold moves to Open and stamps openedAt = now.
+//   HalfOpen:  success → Closed (reset); failure → Open, stamp openedAt.
+//   Open:      ignore (a result shouldn't arrive while Open).
+func (b *Breaker) RecordResult(now time.Time, success bool) {
+	// TODO 3: implement the transitions above.
+	_ = now
+	_ = success
+}
+
+func main() {}

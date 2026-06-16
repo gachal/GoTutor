@@ -1,0 +1,14 @@
+# hints.yaml — per-TODO hint text for the HTTP Retry & Backoff chapter.
+todos:
+  - line: 25
+    hint:
+      zh: '每轮先查 ctx.Err()（非 nil 直接 return nil, err）。再用 http.NewRequestWithContext(ctx, "GET", url, nil) 构造请求，client.Do 发出。'
+      en: 'Each iteration first check ctx.Err() (return if non-nil). Then build the request with http.NewRequestWithContext(ctx, GET, url, nil) and call client.Do.'
+  - line: 28
+    hint:
+      zh: '若 resp.StatusCode 在 200–299 之间，return resp, nil（成功）。否则这是失败的一次：resp.Body.Close() 后继续重试。'
+      en: 'If resp.StatusCode is 200-299, return resp, nil (success). Otherwise this attempt failed: resp.Body.Close() and retry.'
+  - line: 31
+    hint:
+      zh: '若非最后一次尝试，delay := baseDelay * (1 << attempt)（即 baseDelay*2^attempt），用 select { case <-ctx.Done(): return nil, ctx.Err(); case <-time.After(delay): } 等待——这样退避期间 ctx 取消能立即返回。'
+      en: 'Unless it is the last attempt, delay := baseDelay * (1 << attempt) (= baseDelay*2^attempt); wait with select { case <-ctx.Done(): return nil, ctx.Err(); case <-time.After(delay): } so a ctx cancel during backoff returns immediately.'

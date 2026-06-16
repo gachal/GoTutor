@@ -1,0 +1,36 @@
+// Reference solution for Chapter 3: Error Handling.
+package main
+
+import (
+	"errors"
+	"fmt"
+)
+
+var (
+	ErrRateLimit     = errors.New("rate limit exceeded")
+	ErrQuotaExceeded = errors.New("quota exceeded")
+)
+
+type FieldError struct {
+	Field string
+}
+
+func (e *FieldError) Error() string {
+	return fmt.Sprintf("invalid field: %s", e.Field)
+}
+
+func Classify(err error) string {
+	if errors.Is(err, ErrRateLimit) {
+		return "rate_limit"
+	}
+	if errors.Is(err, ErrQuotaExceeded) {
+		return "quota"
+	}
+	var fe *FieldError
+	if errors.As(err, &fe) {
+		return "bad_field"
+	}
+	return "ok"
+}
+
+func main() {}

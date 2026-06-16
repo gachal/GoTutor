@@ -1,0 +1,42 @@
+// Chapter 4: Interfaces & Strategy — initial skeleton.
+// A gateway like AiDeptus picks an upstream server via a load balancer.
+// Here you define a Selector interface and two strategies: round-robin
+// and weighted round-robin. The same interface, different behavior.
+package main
+
+// Server is one upstream instance.
+type Server struct {
+	ID     string
+	Weight int
+}
+
+// TODO 1: declare the Selector interface with one method:
+//   Next(servers []Server) Server
+//   It returns the server chosen for the next request.
+//
+// Add compile-time assertions so the build fails until your types
+// implement the interface:
+//   var _ Selector = (*RoundRobin)(nil)
+//   var _ Selector = (*Weighted)(nil)
+
+// RoundRobin cycles through servers in order, wrapping back to the start.
+type RoundRobin struct {
+	cursor int
+}
+
+// TODO 2: implement Next for *RoundRobin. When servers is empty return
+//   the zero Server. Otherwise pick servers[rr.cursor % len], then bump cursor.
+//   (Return the value, not a pointer — the interface says Server.)
+
+// Weighted expands each server by its Weight before round-robining, so a
+// server with weight 3 is picked ~3x as often as weight 1.
+type Weighted struct {
+	cursor  int
+	expanded []Server // built once per Next call from the current servers
+}
+
+// TODO 3: implement Next for *Weighted. First build `expanded`: for each
+//   server, append it Weight times (skip weight<=0). Then round-robin over
+//   expanded exactly like RoundRobin does. Empty/zero-weight input → zero Server.
+
+func main() {}

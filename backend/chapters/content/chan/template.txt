@@ -1,0 +1,33 @@
+// Chapter 6: Channels & select — initial skeleton.
+// When a gateway runs CPU-bound work in a goroutine, it races the result
+// against a context deadline using a buffered channel + select (see
+// AiDeptus pkg/content_filter). Here you produce values into a channel and
+// consume them with select, bailing out when ctx is cancelled.
+package main
+
+import (
+	"context"
+)
+
+// Process sends each element of `in` to a buffered channel via a producer
+// goroutine, and the main loop receives with select. If ctx is cancelled
+// (timeout) before all values arrive, Process returns whatever it collected
+// so far. Otherwise it returns all of `in` in order.
+func Process(ctx context.Context, in []int) []int {
+	out := make([]int, 0, len(in))
+	ch := make(chan int, len(in)) // buffered so the producer never blocks
+
+	// TODO 1: launch a producer goroutine that sends each value of `in`
+	//   into ch (optionally honoring ctx between sends), then closes ch.
+	//   Closing ch lets the consumer's receive return the zero value + !ok.
+
+	// TODO 2: loop receiving from ch with select — one case takes from ch,
+	//   the other case takes from ctx.Done().
+
+	// TODO 3: when ctx.Done() fires, break the loop and return `out` as-is.
+	//   When ch is closed and drained, also break and return the full `out`.
+	_ = ch
+	return out
+}
+
+func main() {}

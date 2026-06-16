@@ -1,0 +1,45 @@
+// Chapter 11: SSE Streaming — initial skeleton.
+// THE centerpiece of an LLM gateway: forward the upstream token stream to
+// the client line-by-line, flushing after each chunk (AiDeptus
+// handlers/chat.go proxyStreamResponseWithTokenCount). http.Flusher is the
+// magic ingredient — without flushing, tokens buffer and the user sees nothing
+// until the whole response lands.
+//
+// Allowed imports: net/http (plus bufio, context, fmt from the whitelist).
+package main
+
+import (
+	"bufio"
+	"context"
+	"fmt"
+	"net/http"
+)
+
+// ForwardSSE proxies a text/event-stream from upstreamURL to the ResponseWriter w.
+// It reads the upstream body line-by-line, writes each line to w, and Flush()es
+// immediately so the client sees tokens in real time. It returns when the
+// upstream body ends or ctx is cancelled.
+//
+// Steps:
+//  1. Assert w is an http.Flusher (return an error if not).
+//  2. GET upstreamURL with ctx; on error return it. defer resp.Body.Close().
+//  3. Set SSE response headers, then bufio-loop: ReadString('\n'), write, flush.
+//  4. Stop when ReadString returns io.EOF (upstream done) or ctx is cancelled.
+func ForwardSSE(ctx context.Context, upstreamURL string, w http.ResponseWriter) error {
+	// TODO 1: type-assert w to http.Flusher; if it fails, return an error
+	//   like fmt.Errorf("response writer does not support flushing").
+
+	// TODO 2: build req := http.NewRequestWithContext(ctx, GET, upstreamURL, nil),
+	//   set Accept: text/event-stream, do client.Do. Return any error.
+	//   defer resp.Body.Close().
+
+	// TODO 3: set headers (Content-Type: text/event-stream; Cache-Control: no-cache),
+	//   then loop: line, err := bufio.NewReader(resp.Body).ReadString('\n').
+	//   On a non-empty line, w.Write + flusher.Flush(). On io.EOF, break. On
+	//   ctx.Done(), break. Return nil when the stream finishes normally.
+	_ = bufio.NewReader
+	_ = fmt.Sprintf
+	return nil
+}
+
+func main() {}

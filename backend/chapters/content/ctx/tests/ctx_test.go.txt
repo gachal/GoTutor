@@ -1,0 +1,65 @@
+package main
+
+import (
+	"context"
+	"errors"
+	"testing"
+	"time"
+)
+
+// TestRunFastFinishesNil: work that returns immediately completes within the
+// timeout, so RunWithTimeout returns nil.
+func TestRunFastFinishesNil(t *testing.T) {
+	err := RunWithTimeout(context.Background(), time.Second, func(ctx context.Context) error {
+		return nil
+	})
+	if err != nil {
+		t.Errorf("fast work: got %v, want nil", err)
+	}
+}
+
+// TestRunTimeoutFiresDeadlineExceeded: work that blocks forever must hit the
+// timeout. RunWithTimeout runs work in the same goroutine, so for the timeout
+// to fire the work MUST be context-aware — it blocks on <-ctx.Done().
+func TestRunTimeoutFiresDeadlineExceeded(t *testing.T) {
+	err := RunWithTimeout(context.Background(), 30*time.Millisecond, func(ctx context.Context) error {
+		<-ctx.Done() // block until the child timeout fires
+		return ctx.Err()
+	})
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("timeout work: got %v, want context.DeadlineExceeded", err)
+	}
+}
+
+// TestRunCancelledByParent: if the parent ctx is already cancelled, the
+// child inherits that and RunWithTimeout reports Canceled.
+func TestRunCancelledByParent(t *testing.T) {
+	parent, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := RunWithTimeout(parent, time.Second, func(ctx context.Context) error {
+		return ctx.Err()
+	})
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("cancelled parent: got %v, want context.Canceled", err)
+	}
+}
+
+// TestSlowCompletes: Slow finishes its ticks well within the deadline → nil.
+func TestSlowCompletes(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := Slow(ctx, 3); err != nil {
+		t.Errorf("Slow fast-path: got %v, want nil", err)
+	}
+}
+
+// TestSlowCancelled: Slow bails out promptly when ctx is cancelled, returning
+// ctx.Err().
+func TestSlowCancelled(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+	err := Slow(ctx, 100000) // far more ticks than the timeout allows
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("Slow cancelled: got %v, want context.DeadlineExceeded", err)
+	}
+}

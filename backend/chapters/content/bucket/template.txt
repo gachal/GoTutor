@@ -1,0 +1,40 @@
+// Chapter 8: Token Bucket — initial skeleton.
+// A gateway rate-limits per API key with a token bucket (AiDeptus uses
+// golang.org/x/time/rate + Redis Lua). Here you implement the algorithm by
+// hand: tokens refill at a fixed rate up to a capacity; each Allow() costs 1.
+//
+// IMPORTANT: Allow takes `now time.Time` so the test injects time values —
+// do NOT call time.Now(). This makes behavior 100% deterministic.
+package main
+
+import (
+	"time"
+)
+
+// TokenBucket is a classic token-bucket limiter.
+type TokenBucket struct {
+	rate     float64   // refill tokens per second
+	capacity float64   // max tokens the bucket can hold
+	tokens   float64   // current tokens
+	lastTime time.Time // last refill moment
+}
+
+// NewTokenBucket creates a full bucket (tokens == capacity).
+func NewTokenBucket(rate float64, capacity int) *TokenBucket {
+	// TODO 1: return &TokenBucket{ rate, capacity, tokens=capacity, lastTime: zero }.
+	//   lastTime is left zero; Allow treats a zero lastTime as "first call".
+	return nil
+}
+
+// Allow reports whether one token is available at `now`, refilling lazily.
+func (b *TokenBucket) Allow(now time.Time) bool {
+	// TODO 2: on the first call (lastTime is zero) just set lastTime = now
+	//   without adding tokens (tokens starts at capacity). On later calls,
+	//   add elapsed tokens = rate * now.Sub(lastTime).Seconds(), capped at
+	//   capacity, then update lastTime = now.
+
+	// TODO 3: if tokens >= 1, subtract 1 and return true; otherwise false.
+	return false
+}
+
+func main() {}

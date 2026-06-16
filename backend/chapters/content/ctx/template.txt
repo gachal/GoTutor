@@ -1,0 +1,39 @@
+// Chapter 7: context Cancellation — initial skeleton.
+// Every API request in AiDeptus runs under a context.WithTimeout so a slow
+// upstream can't hold a goroutine forever. Here you derive a timeout child
+// context, run work under it, and report ctx.Err().
+package main
+
+import (
+	"context"
+	"time"
+)
+
+// RunWithTimeout derives a child context that auto-cancels after `timeout`,
+// runs `work` in the SAME goroutine (passing it the child context), and then
+// returns the child's ctx.Err():
+//   - nil              → finished in time, no error
+//   - DeadlineExceeded → the timeout fired
+//   - Canceled         → someone called cancel early (not exercised by timeout)
+//
+// Remember defer cancel() to release the timer resources.
+func RunWithTimeout(ctx context.Context, timeout time.Duration, work func(context.Context) error) error {
+	// TODO 1: derive child, cancel with context.WithTimeout(ctx, timeout).
+
+	// TODO 2: run work(child) (ignore its returned error) then return child.Err().
+
+	_ = work
+	return nil
+}
+
+// Slow simulates a long task that respects cancellation: it loops until ctx
+// is done, sleeping in small increments. If ctx is cancelled it returns
+// ctx.Err(); if it finishes its work it returns nil.
+func Slow(ctx context.Context, ticks int) error {
+	// TODO 3: loop `ticks` times, each iteration: select on ctx.Done()
+	//   (return ctx.Err()) vs a small sleep. If the loop completes, return nil.
+	_ = ticks
+	return nil
+}
+
+func main() {}

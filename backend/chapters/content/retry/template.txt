@@ -1,0 +1,39 @@
+// Chapter 10: HTTP Retry & Backoff — initial skeleton.
+// A gateway retries flaky upstreams with exponential backoff that's
+// cancellable via context (AiDeptus pkg/proxy/retry.go). Here you build the
+// retry loop on top of net/http: GET until a 2xx, sleeping with backoff
+// between attempts, and bailing the moment ctx is cancelled.
+//
+// Allowed imports: net/http (plus context, fmt, math, time from the whitelist).
+package main
+
+import (
+	"context"
+	"net/http"
+	"time"
+)
+
+// DoWithRetry GETs url, retrying non-2xx responses up to maxRetries times.
+// Between attempts it sleeps baseDelay*2^attempt (exponential backoff). The
+// sleep is cancellable: if ctx fires during the wait, return ctx.Err().
+//
+// Returns the first 2xx *http.Response (unclosed — caller closes the body).
+func DoWithRetry(ctx context.Context, url string, maxRetries int, baseDelay time.Duration) (*http.Response, error) {
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		// TODO 1: build the request with http.NewRequestWithContext(ctx, GET, url, nil)
+		//   and do client.Do. Return early on ctx error (ctx.Err() != nil).
+
+		// TODO 2: if the status is 2xx (200-299), return the response, nil.
+		//   Otherwise this attempt failed — close resp.Body before retrying.
+
+		// TODO 3: if this isn't the last attempt, sleep for baseDelay*2^attempt.
+		//   Use select { case <-ctx.Done(): return nil, ctx.Err(); case <-time.After(delay): }
+		//   so the wait is interruptible.
+		_ = attempt
+	}
+	return nil, nil
+}
+
+func main() {}

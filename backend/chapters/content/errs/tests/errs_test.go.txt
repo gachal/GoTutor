@@ -1,0 +1,47 @@
+package main
+
+import (
+	"fmt"
+	"testing"
+)
+
+// TestClassify drives Classify against errors wrapped with %w at various
+// depths. It mirrors how AiDeptus maps sentinel errors (service.ErrQPSLimitExceeded
+// etc.) to HTTP responses via errors.Is in handlers/pipeline_helper.go.
+func TestClassify(t *testing.T) {
+	cases := []struct {
+		name string
+		err  error
+		want string
+	}{
+		// Sentinel detected directly.
+		{"direct_rate_limit", ErrRateLimit, "rate_limit"},
+		{"direct_quota", ErrQuotaExceeded, "quota"},
+		// Sentinel buried under two layers of %w — errors.Is must unwrap.
+		{"wrapped_rate_limit", fmt.Errorf("upstream said: %w", ErrRateLimit), "rate_limit"},
+		{"double_wrapped_quota", fmt.Errorf("layer2: %w", fmt.Errorf("layer1: %w", ErrQuotaExceeded)), "quota"},
+		// Custom error type detected via errors.As.
+		{"field_error", &FieldError{Field: "model"}, "bad_field"},
+		{"wrapped_field_error", fmt.Errorf("validate: %w", &FieldError{Field: "messages"}), "bad_field"},
+		// Unknown error falls through to "ok".
+		{"unknown", fmt.Errorf("something else"), "ok"},
+		{"nil_is_ok", nil, "ok"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := Classify(tc.err); got != tc.want {
+				t.Errorf("Classify(%v) = %q, want %q", tc.err, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestFieldErrorMessage checks the custom error type's Error() renders.
+func TestFieldErrorMessage(t *testing.T) {
+	fe := &FieldError{Field: "model"}
+	want := "invalid field: model"
+	if got := fe.Error(); got != want {
+		t.Errorf("FieldError.Error() = %q, want %q", got, want)
+	}
+}
