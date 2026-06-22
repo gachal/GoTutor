@@ -1,18 +1,18 @@
-# hints.yaml — per-TODO hint text for the Maps & JSON chapter.
+# hints.yaml — per-TODO hint text (auto-fixed: double-quoted)
 todos:
-  - line: 11
+  - line: 10
     hint:
-      zh: `map[string]any` 是 Go 处理"结构未知 JSON"的标准武器——`any`（即 `interface{}`）能装 string、number、bool、嵌套 map 等。组装好后 `return json.Marshal(m)`，返回的 `([]byte, error)` 直接传出去。不要忽略 error——上层会接住。
-      en: `map[string]any` is Go's standard tool for "shape-unknown JSON" — `any` (aka `interface{}`) holds strings, numbers, bools, nested maps. Build the map, `return json.Marshal(m)`, pass the `([]byte, error)` straight up. Don't swallow the error — the caller will handle it.
-  - line: 16
+      zh: "`map[string]any` 是 Go 处理\"结构未知 JSON\"的标准武器——`any`（即 `interface{}`）能装 string、number、bool、嵌套 map 等。组装好后 `return json.Marshal(m)`，返回的 `([]byte, error)` 直接传出去。不要忽略 error——上层会接住。"
+      en: "`map[string]any` is Go's standard tool for \"shape-unknown JSON\" — `any` (aka `interface{}`) holds strings, numbers, bools, nested maps. Build the map, `return json.Marshal(m)`, pass the `([]byte, error)` straight up. Don't swallow the error — the caller will handle it."
+  - line: 14
     hint:
       zh: 反向操作：`var m map[string]any; if err := json.Unmarshal(data, &m); err != nil { return ... }`。然后类型断言取字段：`method, _ = m["method"].(string)`。如果断言失败（!ok），那个字段会是零值 ""——这通常是你想要的"宽容解码"，但严格场景下要检查 ok 并返回 error。
-      en: Reverse: `var m map[string]any; if err := json.Unmarshal(data, &m); err != nil { return ... }`. Then type-assert each field: `method, _ = m["method"].(string)`. If the assertion fails (!ok) the field stays "" — that's "lenient decoding" and often fine, but strict callers should check ok and return an error.
-  - line: 22
+      en: "Reverse: `var m map[string]any; if err := json.Unmarshal(data, &m); err != nil { return ... }`. Then type-assert each field: `method, _ = m[\"method\"].(string)`. If the assertion fails (!ok) the field stays \"\" — that's \"lenient decoding\" and often fine, but strict callers should check ok and return an error."
+  - line: 18
     hint:
       zh: Go 里 map 是引用类型——直接 `base["x"] = "y"` 会改原 map，这是隐蔽 bug 的常见来源。正确做法：`out := make(map[string]string)`，先把 base 的所有 key 复制进去，再用 override 覆盖。这样 base 和 override 都没被动过。
-      en: Maps in Go are reference types — `base["x"] = "y"` mutates the original, a classic subtle bug. Correct: `out := make(map[string]string)`, copy all of base's keys in, then overlay override. Both base and override stay untouched.
-  - line: 27
+      en: "Maps in Go are reference types — `base[\"x\"] = \"y\"` mutates the original, a classic subtle bug. Correct: `out := make(map[string]string)`, copy all of base's keys in, then overlay override. Both base and override stay untouched."
+  - line: 23
     hint:
-      zh: `b, err := json.MarshalIndent(v, "", "  ")`——第二个参数是每行前缀（通常空串），第三个是缩进（两个空格是 Go 生态约定）。返回 `string(b), err`。MarshalIndent 比 Marshal 慢一点，但调试时人能读得懂。
-      en: `b, err := json.MarshalIndent(v, "", "  ")` — second arg is a per-line prefix (usually empty), third is the indent (two spaces is Go convention). Return `string(b), err`. MarshalIndent is slower than Marshal but humans can read the output when debugging.
+      zh: "`b, err := json.MarshalIndent(v, \"\", \"  \")`——第二个参数是每行前缀（通常空串），第三个是缩进（两个空格是 Go 生态约定）。返回 `string(b), err`。MarshalIndent 比 Marshal 慢一点，但调试时人能读得懂。"
+      en: "`b, err := json.MarshalIndent(v, \"\", \"  \")` — second arg is a per-line prefix (usually empty), third is the indent (two spaces is Go convention). Return `string(b), err`. MarshalIndent is slower than Marshal but humans can read the output when debugging."
