@@ -62,15 +62,84 @@ func HandleListChapters(c *gin.Context, db *sql.DB) {
 	for _, ch := range all {
 		isDone := completed[ch.ID]
 		out = append(out, Chapter{
-			ID:          ch.ID,
-			Title:       pickLocale(ch.Title, zh),
-			Description: pickLocale(ch.Description, zh),
-			Ordinal:     ch.Ordinal,
-			Completed:   isDone,
-			Unlocked:    true,
+			ID:               ch.ID,
+			Title:            pickLocale(ch.Title, zh),
+			Description:      pickLocale(ch.Description, zh),
+			Ordinal:          ch.Ordinal,
+			Track:            string(ch.Track),
+			Difficulty:       string(ch.Difficulty),
+			EstimatedMinutes: ch.EstimatedMinutes,
+			Prerequisites:    ch.Prerequisites,
+			Completed:        isDone,
+			Unlocked:         true,
 		})
 	}
 	c.JSON(http.StatusOK, out)
+}
+
+// HandleGetProgress — GET /api/progress
+// Returns aggregate completion state: total/completed counts, percent,
+// per-track breakdown, and the most recently passed chapter ID (used by
+// the "continue where you left off" hero as a Phase 1 fallback before a
+// dedicated visits table lands).
+func HandleGetProgress(c *gin.Context, db *sql.DB) {
+	all := chapters.List()
+
+	completed, err := listCompleted(db)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "query progress: " + err.Error()})
+		return
+	}
+
+	// lastChapter: most recently completed, by completed_at DESC.
+	// Empty string when the user hasn't passed anything yet.
+	var lastChapterID string
+	var lastAt sql.NullInt64
+	row := db.QueryRow(`SELECT chapter_id, completed_at FROM progress
+		WHERE completed_at IS NOT NULL
+		ORDER BY completed_at DESC LIMIT 1`)
+	if err := row.Scan(&lastChapterID, &lastAt); err != nil && err != sql.ErrNoRows {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "query last progress: " + err.Error()})
+		return
+	}
+
+	// Aggregate per-track counts in fixed track order so the response is stable.
+	trackOrder := []string{"fundamentals", "concurrency", "gateway"}
+	trackIdx := map[string]int{}
+	for i, t := range trackOrder {
+		trackIdx[t] = i
+	}
+	byTrack := make([]TrackProgress, len(trackOrder))
+	for i, t := range trackOrder {
+		byTrack[i] = TrackProgress{Track: t}
+	}
+
+	total := len(all)
+	done := 0
+	for _, ch := range all {
+		if completed[ch.ID] {
+			done++
+		}
+		if idx, ok := trackIdx[string(ch.Track)]; ok {
+			byTrack[idx].TotalChapters++
+			if completed[ch.ID] {
+				byTrack[idx].CompletedChapters++
+			}
+		}
+	}
+
+	percent := 0
+	if total > 0 {
+		percent = done * 100 / total
+	}
+
+	c.JSON(http.StatusOK, ProgressResponse{
+		TotalChapters:     total,
+		CompletedChapters: done,
+		Percent:           percent,
+		LastChapterID:     lastChapterID,
+		ByTrack:           byTrack,
+	})
 }
 
 // HandleGetTemplate — GET /api/chapters/:id/template

@@ -1,0 +1,108 @@
+package main
+
+import (
+	"encoding/json"
+	"reflect"
+	"strings"
+	"testing"
+)
+
+func TestMarshalRequestRoundTrip(t *testing.T) {
+	headers := map[string]string{"Authorization": "Bearer tok", "X-Trace": "abc"}
+	data, err := MarshalRequest("POST", "/v1/chat", headers)
+	if err != nil {
+		t.Fatalf("MarshalRequest error: %v", err)
+	}
+
+	var m map[string]any
+	if err := json.Unmarshal(data, &m); err != nil {
+		t.Fatalf("output isn't valid JSON: %v\nraw: %s", err, string(data))
+	}
+	if m["method"] != "POST" {
+		t.Errorf(`method = %v, want "POST"`, m["method"])
+	}
+	if m["path"] != "/v1/chat" {
+		t.Errorf(`path = %v, want "/v1/chat"`, m["path"])
+	}
+	hm, ok := m["headers"].(map[string]any)
+	if !ok {
+		t.Fatalf(`headers not a map: %T`, m["headers"])
+	}
+	if hm["Authorization"] != "Bearer tok" {
+		t.Errorf(`Authorization = %v, want "Bearer tok"`, hm["Authorization"])
+	}
+}
+
+func TestDecodeRequestSuccess(t *testing.T) {
+	data, _ := json.Marshal(map[string]any{
+		"method":  "GET",
+		"path":    "/healthz",
+		"headers": map[string]any{"X-Api-Key": "secret"},
+	})
+	method, path, headers, err := DecodeRequest(data)
+	if err != nil {
+		t.Fatalf("DecodeRequest error: %v", err)
+	}
+	if method != "GET" {
+		t.Errorf("method = %q, want GET", method)
+	}
+	if path != "/healthz" {
+		t.Errorf("path = %q, want /healthz", path)
+	}
+	wantHeaders := map[string]string{"X-Api-Key": "secret"}
+	if !reflect.DeepEqual(headers, wantHeaders) {
+		t.Errorf("headers = %v, want %v", headers, wantHeaders)
+	}
+}
+
+func TestDecodeRequestBadJSON(t *testing.T) {
+	_, _, _, err := DecodeRequest([]byte("not json"))
+	if err == nil {
+		t.Error("DecodeRequest on invalid JSON should return an error")
+	}
+}
+
+func TestMergeHeadersOverrideWins(t *testing.T) {
+	base := map[string]string{"A": "1", "B": "2"}
+	override := map[string]string{"B": "20", "C": "3"}
+
+	merged := MergeHeaders(base, override)
+	want := map[string]string{"A": "1", "B": "20", "C": "3"}
+	if !reflect.DeepEqual(merged, want) {
+		t.Errorf("merged = %v, want %v", merged, want)
+	}
+
+	if base["B"] != "2" {
+		t.Errorf("MergeHeaders mutated base: B = %q", base["B"])
+	}
+	if override["B"] != "20" {
+		t.Errorf("MergeHeaders mutated override: B = %q", override["B"])
+	}
+}
+
+func TestMergeHeadersBothNil(t *testing.T) {
+	merged := MergeHeaders(nil, nil)
+	if merged == nil {
+		t.Fatal("MergeHeaders(nil, nil) returned nil — should be empty non-nil map")
+	}
+	if _, ok := merged["anything"]; ok {
+		t.Error("expected empty map")
+	}
+}
+
+func TestPrettyJSON(t *testing.T) {
+	got, err := PrettyJSON(map[string]int{"a": 1, "b": 2})
+	if err != nil {
+		t.Fatalf("PrettyJSON error: %v", err)
+	}
+	if !strings.Contains(got, "\n") {
+		t.Errorf("PrettyJSON output has no newline — not indented?\n%s", got)
+	}
+	if !strings.Contains(got, "  ") {
+		t.Errorf("PrettyJSON output has no two-space indent\n%s", got)
+	}
+	var back map[string]int
+	if err := json.Unmarshal([]byte(got), &back); err != nil {
+		t.Errorf("PrettyJSON output is not valid JSON: %v", err)
+	}
+}

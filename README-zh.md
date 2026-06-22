@@ -2,20 +2,30 @@
 
 > [English](README.md) | 中文
 
-一款交互式桌面应用，通过在真实迷你项目里填补 `// TODO` 空缺来学习
-Go。应用会用 `go test` 真正编译并运行你的代码——不靠字符串匹配。
+**一座给 AI 时代开发者的 Go 肌肉记忆训练馆。** 你已经会写代码——也许还
+经常让 AI 帮你写。GoTutor 让你的手亲自敲出真实 Go 项目里的地道写法，
+在原版迷你项目里填 `// TODO` 空缺。应用用真正的 `go test` 编译并运行
+你的代码——不靠字符串匹配，没有假 REPL。这些练习建立的是"从 AI 复制
+粘贴"会慢慢消磨掉的肌肉记忆。
 
 ## 状态
 
-已端到端发布 **11 个章节**：
-- **两个基础章节** —— `calc`（命令行计算器：`os.Args`、`strconv`、switch
-  分发、除零处理）和 `urlcheck`（并发 URL 检查器：goroutine、channel、
-  `sync.WaitGroup`、`net/http` 客户端）。
-- **九个进阶章节** —— 取材自一个真实的 LLM API 网关（AiDeptus）所用
+已端到端发布 **15 个章节**，分为三条学习路径：
+
+- **Go 基础（5 章）** —— `calc`（命令行计算器）、`structs`（结构体与方法）、
+  `slice`（Filter/Map/Unique/Chunk）、`mapjson`（JSON 往返）、`http`
+  （Handler 基础）。建立后续每一章都依赖的语法肌肉记忆。
+- **并发（1 章）** —— `urlcheck`（goroutine、channel、WaitGroup、
+  `net/http` 客户端）。
+- **网关实战（9 章）** —— 取材自一个真实的 LLM API 网关（AiDeptus）所用
   Go 模式：错误处理、接口与策略模式、并发求和、channel 与 select、
   context 取消、令牌桶限流、熔断器、HTTP 重试与退避、SSE 流式转发。
 
 全部章节都走完整的 Monaco 编辑器 + 沙箱化 `go test` 流程。
+
+首页展示总进度条、"继续上次练习"入口，以及每章卡片（含难度、估时、
+练习次数）。首次运行有欢迎弹窗讲解练习模式；如果检测不到 Go 工具链，
+会弹出安装指引。
 
 ## 技术栈
 
@@ -74,7 +84,8 @@ C 工具链即可交叉编译到全部四个目标。
 | 端点                                   | 方法   | 请求体                        | 返回                                  |
 |---------------------------------------|--------|-------------------------------|--------------------------------------|
 | `/api/health`                         | GET    | —                             | `{ok, port, goFound, goVersion}`     |
-| `/api/chapters`                       | GET    | —                             | `Chapter[]`（按语言返回）              |
+| `/api/chapters`                       | GET    | —                             | `Chapter[]`，含 track/difficulty/estimatedMinutes/prerequisites |
+| `/api/progress`                       | GET    | —                             | `{totalChapters, completedChapters, percent, lastChapterId, byTrack}` |
 | `/api/chapters/:id/template`          | GET    | —                             | `{code, todos: [{line, hint}]}`      |
 | `/api/chapters/:id/hint?line=N`       | GET    | —                             | `{text}`                             |
 | `/api/chapters/:id/submit`            | POST   | `{userCode: string}`          | `{passed, output, durationMs, ...}`  |
@@ -90,7 +101,7 @@ C 工具链即可交叉编译到全部四个目标。
 - [安全模型](docs/SECURITY-zh.md) —— 沙箱防御什么、残余风险、未来加固
   （RLIMIT、Docker）。
 - [添加章节](docs/ADDING_A_CHAPTER-zh.md) —— 编写你自己的练习
-  （9 个进阶章节已覆盖网关模式）。
+  （已有 15 章分 3 条路径）。
 
 ## 许可证
 

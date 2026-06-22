@@ -1,0 +1,18 @@
+# hints.yaml — per-TODO hint text for the Slice Operations chapter.
+todos:
+  - line: 10
+    hint:
+      zh: 过滤模式：`var out []int` 起手（零值 nil），遍历 xs，`if keep(x) { out = append(out, x) }`。返回 out。当没有任何元素匹配时返回 nil slice 是没问题的——调用方应该用 `len(out) == 0` 判断空，而不是 `out == nil`。
+      en: Filter pattern: start with `var out []int` (zero-value nil), loop xs, `if keep(x) { out = append(out, x) }`. Return out. Returning a nil slice when nothing matches is fine — callers should check `len(out) == 0`, not `out == nil`.
+  - line: 15
+    hint:
+      zh: Map 模式：预分配 `out := make([]int, len(xs))`，然后 `for i, x := range xs { out[i] = fn(x) }`。预分配避免 append 多次扩容——map 是有已知长度的，没理由让 append 重新分配。返回 out。
+      en: Map pattern: pre-allocate `out := make([]int, len(xs))`, then `for i, x := range xs { out[i] = fn(x) }`. Pre-allocating avoids append's growth strategy — we know the length up front, no reason to make append reallocate. Return out.
+  - line: 20
+    hint:
+      zh: 用 `seen := map[int]struct{}{}` 做"见过"集合（`struct{}` 不占内存，比 `map[int]bool` 更省）。遍历 xs，每个 x 如果不在 seen 里就 append 到 out 并标记 seen[x] = struct{}{}。这样保留首次出现的顺序。
+      en: Use `seen := map[int]struct{}{}` as the seen-set (`struct{}` is zero-byte, cheaper than `map[int]bool`). Loop xs; if x isn't in seen, append to out and mark `seen[x] = struct{}{}`. This preserves first-occurrence order.
+  - line: 25
+    hint:
+      zh: 切块模式：先 `if size <= 0 { return nil }`（避免无限循环和除零）。然后 `for i := 0; i < len(xs); i += size { end := i + size; if end > len(xs) { end = len(xs) }; out = append(out, xs[i:end]) }`。注意 `xs[i:end]` 当 end 超过 len 时会 panic，所以要钳制。
+      en: Chunk pattern: first `if size <= 0 { return nil }` (avoids infinite loop and divide-by-zero). Then `for i := 0; i < len(xs); i += size { end := i + size; if end > len(xs) { end = len(xs) }; out = append(out, xs[i:end]) }`. Note `xs[i:end]` panics if end > len(xs), so clamp it.

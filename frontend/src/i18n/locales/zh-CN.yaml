@@ -1,6 +1,6 @@
 app:
   name: GoTutor
-  tagline: 通过填空真实项目学 Go
+  tagline: 给 AI 时代开发者的 Go 肌肉记忆训练馆
 sidebar:
   title: 章节
   theme:
@@ -23,26 +23,121 @@ editor:
   hint: 提示
   reset: 重置代码
   shortcut_submit: '⌘/Ctrl + Enter 提交'
+  run: 运行测试
+  running: 正在运行…
+  shortcut: '{count} 个 TODO · ⌘/Ctrl + Enter 运行'
 output:
   title: 输出
-  empty: 提交代码后这里会显示测试结果
-  passed: 通过！
-  failed: 失败
+  empty: 还没运行测试。点左上的「运行测试」，或者按 ⌘/Ctrl + Enter。
+  passed: 测试通过
+  failed: 没通过——再试一次
+  passed_first_time: 一次过！漂亮
   duration: '耗时 {ms} 毫秒'
   unlocked_next: 已解锁下一章节
+  fail_hint_1: 先看测试报错的第一条——通常是真正的问题。
+  fail_hint_2: 报错提到行号？回到那一行看看上下文。
+  fail_hint_3: 编译错误（cannot use / undefined）多半是类型或导出名不对。
+  show_hints: 还是卡住？看看提示
 solution:
   open: 推荐答案
-  title: 推荐答案
-  subtitle: 一种可行的参考解答——你的写法可能不同，但同样能通过。
+  title: 参考答案
+  subtitle: 一种可行写法。你的写法可能不同，但能通过测试就行。
+  reference: 看参考答案
+  reference_sub: 实在卡住了再看。看了之后自己敲一遍，别复制粘贴。
   close: 关闭
   loading: 加载中…
   load_error: 加载答案失败
   copy: 复制
   copied: 已复制
+hints:
+  title: 提示
+  subtitle: 教练式提示——告诉你为什么，不直接给答案。
+  toggle_show: 需要提示？
+  toggle_hide: 收起提示
+  jump: 跳到这一行
+  no_hint: 这一行没有专门提示。读读上下文注释，或者看看测试用例。
 errors:
-  backend_down: 无法连接到后端服务
-  unknown: 出错了
+  backend_down: 后台服务没起来——稍等几秒，或者点重试。
+  server_hiccup: 服务短暂抽风，重试一次就好。
+  bad_request: 请求出错了。刷新一下，如果还出现请告诉我们。
+  unknown: 出错了，但我们不清楚原因。重启 app 通常能修。
 common:
   cancel: 取消
   confirm: 确认
   retry: 重试
+# === Phase 3: chapter list redesign + retention ===
+tracks:
+  fundamentals:
+    title: Go 基础
+    subtitle: 语法、数据结构、HTTP——从零到能写真实代码
+  concurrency:
+    title: 并发
+    subtitle: goroutine、channel、context——Go 的看家本领
+  gateway:
+    title: 网关实战
+    subtitle: 9 个来自真实 LLM 网关的生产级模式
+difficulty:
+  beginner: 入门
+  intermediate: 进阶
+  advanced: 高级
+card:
+  status:
+    completed: 通过
+    in_progress: 进行中
+    not_started: 未开始
+  practiced: 练过 {count} 次
+estimated_time: 约 {minutes} 分钟
+continue:
+  label: 继续上次练习
+  subtitle: 上次你在「{title}」
+  cta: 继续
+all_done:
+  title: 全部通过
+  body: 你完成了所有章节。回头再来敲一遍，肌肉记忆就是这么练出来的。
+overall:
+  progress: '{done} / {total} 章通过'
+# === Phase 2: first-run experience + Go-missing recovery ===
+boot:
+  loading: 正在启动 GoTutor…
+welcome:
+  title: 欢迎来到 GoTutor
+  subtitle: 给 AI 时代开发者的 Go 肌肉记忆训练馆
+  body: |
+    你已经会写代码——也许还经常让 AI 帮你写。
+    但当 AI 给你一段 Go，你能一眼看出它写得地道吗?
+    GoTutor 不教你「什么是变量」。它让你亲手敲出真实项目里的地道写法：
+    填空、跑测试、肌肉记忆就长出来了。
+  step_1: 1. 打开一个章节——每章都是真实小项目，里面有几个 // TODO 标记等你填
+  step_2: 2. 敲代码，运行测试——不是字符串比对，是真的 go test 跑你的代码
+  step_3: 3. 卡住了就点「需要提示？」——提示告诉你为什么这么写，不是直接给答案
+  cta: 开始第一章
+  skip: 跳过，我自己看
+  reopen_label: 帮助
+go_missing:
+  title: 还差一步——需要先装 Go
+  body_1: GoTutor 用真正的 go test 跑你的代码，所以本机需要有 Go 工具链。
+  body_2: 装好后回到这里，点下面的按钮，几秒钟就能开始。
+  install_mac:
+    label: macOS 安装
+    step_1: 用 Homebrew（推荐）：
+    step_2: 或下载官方安装包：
+    download: 下载 Go 安装包
+  install_windows:
+    label: Windows 安装
+    step_1: 下载官方安装包（.msi）：
+    download: 下载 Go 安装包
+    step_2: 双击运行，一路下一步
+  install_linux:
+    label: Linux 安装
+    step_1: 从官网下载 tarball：
+    download: 下载 Go tarball
+    step_2: 解压到 /usr/local/go 并把 /usr/local/go/bin 加到 PATH
+  recheck: 我装好了，重新检测
+  rechecking: 检测中…
+  why_go: 为什么需要 Go？
+  why_go_body: GoTutor 把你的代码写进临时文件，调用真正的 go test 跑测试。和在线 playground 不同——你要在自己的机器上练，肌肉记忆才能长出来。
+backend_down:
+  title: 后台服务没起来
+  body: GoTutor 的后台进程没响应。这通常是首次启动慢或者被防火墙拦了。
+  retry: 重试
+  log_hint: 如果一直失败，日志写在

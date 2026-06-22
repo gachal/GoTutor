@@ -44,6 +44,17 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	r.Use(corsMiddleware())
 	r.Use(requestLogger())
 
+	// Resolve the Go toolchain path once at construction. This matters
+	// because the backend is typically launched by the Electron main
+	// process, which on macOS inherits the GUI launchd PATH
+	// (/usr/bin:/bin:/usr/sbin:/sbin) — NOT the user's shell profile.
+	// Without this fallback, `exec.LookPath("go")` fails even when Go
+	// is installed at /usr/local/go/bin/go or /opt/homebrew/bin/go, and
+	// the boot gate shows "Go missing" forever. The resolved absolute
+	// path is stored on cfg so both handleHealth AND the verifier (which
+	// receives cfg.GoBinary via HandleSubmit) use the same binary.
+	cfg.GoBinary = resolveGoBinary(cfg.GoBinary)
+
 	s := &Server{
 		cfg:    cfg,
 		db:     db,
@@ -51,6 +62,55 @@ func New(cfg config.Config, db *sql.DB) *Server {
 	}
 	s.RegisterRoutes(r)
 	return s
+}
+
+// resolveGoBinary finds the `go` executable with progressively wider
+// fallbacks. Returns "" if nothing is found — the caller treats that as
+// "Go missing" and the boot gate shows the install screen.
+//
+// Resolution order:
+//  1. cfgGoBinary if set (user override via -go-binary flag) and exists
+//  2. exec.LookPath("go") — works when launched from a shell with Go on PATH
+//  3. Well-known absolute locations (covers official installer, Homebrew,
+//     Linux packages, user-local GOPATH installs)
+func resolveGoBinary(cfgGoBinary string) string {
+	// 1. Explicit override.
+	if cfgGoBinary != "" {
+		if path, err := exec.LookPath(cfgGoBinary); err == nil && path != "" {
+			return path
+		}
+		// If the override doesn't resolve, fall through to discovery —
+		// better to find SOME Go than none.
+	}
+
+	// 2. PATH lookup (works for terminal-launched dev runs).
+	if path, err := exec.LookPath("go"); err == nil && path != "" {
+		return path
+	}
+
+	// 3. Well-known absolute locations. GUI-launched apps on macOS don't
+	// inherit the user's shell PATH, so PATH-only lookup misses the
+	// common install spots. Stat (not LookPath) because these are
+	// already absolute — LookPath would just check they're executable,
+	// which Stat + !IsDir is good enough for.
+	home, _ := os.UserHomeDir()
+	candidates := []string{
+		"/usr/local/go/bin/go",                       // official .pkg installer (macOS/Linux)
+		"/opt/homebrew/bin/go",                       // Apple Silicon Homebrew
+		"/usr/local/bin/go",                          // Intel Homebrew + manual symlinks
+		"/usr/lib/go/bin/go",                         // Debian/Ubuntu golang package
+		"/snap/go/current/bin/go",                    // snap package
+		"/home/linuxbrew/.linuxbrew/bin/go",          // Linuxbrew
+		filepath.Join(home, "go", "bin", "go"),       // GOPATH user-local install
+		filepath.Join(home, ".gvm", "gos", "current", "bin", "go"), // gvm
+		filepath.Join(home, ".g", "go", "bin", "go"), // goenv-style
+	}
+	for _, c := range candidates {
+		if info, err := os.Stat(c); err == nil && !info.IsDir() {
+			return c
+		}
+	}
+	return ""
 }
 
 // Start binds the HTTP listener (scanning cfg.Port..cfg.PortMax if needed),

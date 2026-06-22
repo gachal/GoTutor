@@ -37,6 +37,29 @@ type HintsFile struct {
 	Todos []Hint `yaml:"todos"`
 }
 
+// Track groups chapters in the UI. Backend is the single source of truth
+// for track identity; the frontend renders whatever tracks the API emits.
+// Display ORDER is a frontend concern (fixed list in ChapterListView).
+type Track string
+
+const (
+	TrackFundamentals Track = "fundamentals"
+	TrackConcurrency  Track = "concurrency"
+	TrackGateway      Track = "gateway"
+)
+
+// Difficulty is a 3-level rating shown on the chapter card. Informational
+// only — does NOT gate access. Maps loosely to track: beginner = bridge
+// chapters, intermediate = calc/urlcheck + intermediate gateway chapters,
+// advanced = the production-grade gateway patterns.
+type Difficulty string
+
+const (
+	DifficultyBeginner     Difficulty = "beginner"
+	DifficultyIntermediate Difficulty = "intermediate"
+	DifficultyAdvanced     Difficulty = "advanced"
+)
+
 // Chapter describes one learning chapter. Static metadata is hardcoded
 // in registry.go; dynamic content (template code, hints, tests, solution)
 // is loaded from the embedded filesystem lazily.
@@ -45,6 +68,23 @@ type Chapter struct {
 	Title       Locale
 	Description Locale
 	Ordinal     int
+
+	// Track groups this chapter in the UI ("fundamentals" / "concurrency"
+	// / "gateway"). Drives the sectioned chapter list.
+	Track Track
+
+	// Difficulty is beginner | intermediate | advanced. Shown as a label
+	// on the chapter card.
+	Difficulty Difficulty
+
+	// EstimatedMinutes is the median time-to-pass, shown on the card.
+	// Approximate by design.
+	EstimatedMinutes int
+
+	// Prerequisites lists chapter IDs the learner should have completed
+	// before attempting this one. Informational only — does NOT gate
+	// access (all chapters stay unlocked).
+	Prerequisites []string
 
 	// AllowImports is the verifier whitelist (Phase 3). Empty means
 	// "default safe stdlib subset"; populated adds extras like "net/http".
@@ -62,122 +102,226 @@ type Chapter struct {
 // registry is the static list. Order matters — ordinals drive unlock gating.
 var registry = []Chapter{
 	{
-		ID:          "calc",
-		Title:       Locale{Zh: "命令行计算器", En: "CLI Calculator"},
+		ID:    "calc",
+		Title: Locale{Zh: "命令行计算器", En: "CLI Calculator"},
 		Description: Locale{
 			Zh: "解析命令行参数，实现一个支持 +、-、*、/ 的简单计算器。",
 			En: "Parse command-line arguments and build a simple calculator supporting +, -, *, /.",
 		},
-		Ordinal:    1,
-		contentDir: "calc",
+		Ordinal:          1,
+		Track:            TrackFundamentals,
+		Difficulty:       DifficultyBeginner,
+		EstimatedMinutes: 8,
+		Prerequisites:    []string{},
+		contentDir:       "calc",
 	},
 	{
-		ID:          "urlcheck",
-		Title:       Locale{Zh: "并发 URL 检查器", En: "Concurrent URL Checker"},
+		ID:    "structs",
+		Title: Locale{Zh: "结构体与方法", En: "Structs & Methods"},
+		Description: Locale{
+			Zh: "定义 Person 结构体，写构造函数和 String 方法——后续每一章都用到的基本构件。",
+			En: "Define a Person struct, write a constructor and a String method — the building block every later chapter uses.",
+		},
+		Ordinal:          2,
+		Track:            TrackFundamentals,
+		Difficulty:       DifficultyBeginner,
+		EstimatedMinutes: 10,
+		Prerequisites:    []string{"calc"},
+		AllowImports:     []string{"strings"},
+		contentDir:       "structs",
+	},
+	{
+		ID:    "slice",
+		Title: Locale{Zh: "切片操作", En: "Slice Operations"},
+		Description: Locale{
+			Zh: "实现 Filter、Map、Unique、Chunk——Go 里每天都在用的切片三件套。",
+			En: "Implement Filter, Map, Unique, and Chunk — slice helpers you'll write every day in Go.",
+		},
+		Ordinal:          3,
+		Track:            TrackFundamentals,
+		Difficulty:       DifficultyBeginner,
+		EstimatedMinutes: 12,
+		Prerequisites:    []string{"structs"},
+		contentDir:       "slice",
+	},
+	{
+		ID:    "mapjson",
+		Title: Locale{Zh: "map 与 JSON", En: "Maps & JSON"},
+		Description: Locale{
+			Zh: "把请求参数编成 JSON 再解码回来——网关里每秒都在做的事。",
+			En: "Marshal request params to JSON and decode them back — something a gateway does every second.",
+		},
+		Ordinal:          4,
+		Track:            TrackFundamentals,
+		Difficulty:       DifficultyBeginner,
+		EstimatedMinutes: 14,
+		Prerequisites:    []string{"structs", "slice"},
+		AllowImports:     []string{"encoding/json"},
+		contentDir:       "mapjson",
+	},
+	{
+		ID:    "http",
+		Title: Locale{Zh: "HTTP Handler 入门", En: "HTTP Handler Basics"},
+		Description: Locale{
+			Zh: "实现 http.Handler，路由 /healthz 和 /echo——所有网关章节的地基。",
+			En: "Implement an http.Handler that routes /healthz and /echo — the foundation of every gateway chapter.",
+		},
+		Ordinal:          5,
+		Track:            TrackFundamentals,
+		Difficulty:       DifficultyBeginner,
+		EstimatedMinutes: 16,
+		Prerequisites:    []string{"mapjson"},
+		AllowImports:     []string{"net/http", "encoding/json"},
+		contentDir:       "http",
+	},
+	{
+		ID:    "urlcheck",
+		Title: Locale{Zh: "并发 URL 检查器", En: "Concurrent URL Checker"},
 		Description: Locale{
 			Zh: "用 goroutine、channel 和 sync.WaitGroup 并发探测多个 URL 的状态码。",
 			En: "Probe the status code of many URLs concurrently using goroutines, channels, and sync.WaitGroup.",
 		},
-		Ordinal:      2,
-		AllowImports: []string{"net/http", "sync", "time"},
-		contentDir:   "urlcheck",
+		Ordinal:          6,
+		Track:            TrackConcurrency,
+		Difficulty:       DifficultyIntermediate,
+		EstimatedMinutes: 18,
+		Prerequisites:    []string{"http"},
+		AllowImports:     []string{"net/http", "sync", "time"},
+		contentDir:       "urlcheck",
 	},
-	// Chapters 3–11 are drawn from the Go knowledge points used in AiDeptus,
+	// Chapters 7–15 are drawn from the Go knowledge points used in AiDeptus,
 	// an LLM API gateway (../AiDeptus). Each chapter maps to a real pattern
 	// from that codebase: error classification → interface/strategy →
 	// concurrency primitives → rate limiting → circuit breaking → HTTP retry
-	// → SSE streaming.
+	// → SSE streaming. These assume you've built the muscle memory from
+	// chapters 1–6; hints reference patterns from there.
 	{
-		ID:          "errs",
-		Title:       Locale{Zh: "错误处理", En: "Error Handling"},
+		ID:    "errs",
+		Title: Locale{Zh: "错误处理", En: "Error Handling"},
 		Description: Locale{
 			Zh: "用哨兵错误、errors.Is/As 和 %w 包裹分类错误链——网关据此映射 HTTP 状态码。",
 			En: "Classify a wrapped error chain with sentinel errors, errors.Is/As, and %w — how a gateway maps errors to HTTP status.",
 		},
-		Ordinal:    3,
-		contentDir: "errs",
+		Ordinal:          7,
+		Track:            TrackGateway,
+		Difficulty:       DifficultyIntermediate,
+		EstimatedMinutes: 15,
+		Prerequisites:    []string{"urlcheck"},
+		contentDir:       "errs",
 	},
 	{
-		ID:          "lb",
-		Title:       Locale{Zh: "接口与策略模式", En: "Interfaces & Strategy"},
+		ID:    "lb",
+		Title: Locale{Zh: "接口与策略模式", En: "Interfaces & Strategy"},
 		Description: Locale{
 			Zh: "定义 Selector 接口，实现轮询与加权轮询两种负载均衡策略。",
 			En: "Define a Selector interface and implement round-robin and weighted load-balancing strategies.",
 		},
-		Ordinal:    4,
-		contentDir: "lb",
+		Ordinal:          8,
+		Track:            TrackGateway,
+		Difficulty:       DifficultyAdvanced,
+		EstimatedMinutes: 25,
+		Prerequisites:    []string{"errs"},
+		contentDir:       "lb",
 	},
 	{
-		ID:          "pool",
-		Title:       Locale{Zh: "并发求和", En: "Concurrent Sum"},
+		ID:    "pool",
+		Title: Locale{Zh: "并发求和", En: "Concurrent Sum"},
 		Description: Locale{
 			Zh: "用 goroutine、sync.WaitGroup 和 sync.Mutex 把切片分给多个 worker 并发求和。",
 			En: "Split a slice across goroutines and merge the partial sums with sync.WaitGroup and sync.Mutex.",
 		},
-		Ordinal:    5,
-		contentDir: "pool",
+		Ordinal:          9,
+		Track:            TrackGateway,
+		Difficulty:       DifficultyIntermediate,
+		EstimatedMinutes: 20,
+		Prerequisites:    []string{"urlcheck"},
+		contentDir:       "pool",
 	},
 	{
-		ID:          "chan",
-		Title:       Locale{Zh: "channel 与 select", En: "Channels & select"},
+		ID:    "chan",
+		Title: Locale{Zh: "channel 与 select", En: "Channels & select"},
 		Description: Locale{
 			Zh: "用缓冲 channel 传值，select 同时监听数据与 ctx.Done()，超时提前返回。",
 			En: "Pipe values through a buffered channel, select on both data and ctx.Done(), and bail out on timeout.",
 		},
-		Ordinal:    6,
-		contentDir: "chan",
+		Ordinal:          10,
+		Track:            TrackGateway,
+		Difficulty:       DifficultyAdvanced,
+		EstimatedMinutes: 22,
+		Prerequisites:    []string{"pool"},
+		contentDir:       "chan",
 	},
 	{
-		ID:          "ctx",
-		Title:       Locale{Zh: "context 超时取消", En: "context Cancellation"},
+		ID:    "ctx",
+		Title: Locale{Zh: "context 超时取消", En: "context Cancellation"},
 		Description: Locale{
 			Zh: "用 context.WithTimeout 派生超时上下文，让慢任务响应 ctx.Done() 并返回 ctx.Err()。",
 			En: "Derive a timeout context with context.WithTimeout and let slow tasks honor ctx.Done() and report ctx.Err().",
 		},
-		Ordinal:    7,
-		contentDir: "ctx",
+		Ordinal:          11,
+		Track:            TrackGateway,
+		Difficulty:       DifficultyAdvanced,
+		EstimatedMinutes: 18,
+		Prerequisites:    []string{"chan"},
+		contentDir:       "ctx",
 	},
 	{
-		ID:          "bucket",
-		Title:       Locale{Zh: "令牌桶限流", En: "Token Bucket Limiter"},
+		ID:    "bucket",
+		Title: Locale{Zh: "令牌桶限流", En: "Token Bucket Limiter"},
 		Description: Locale{
 			Zh: "手写令牌桶：按速率懒补充令牌、容量封顶，Allow 判断是否放行。",
 			En: "Implement a token bucket by hand: lazy refill at a fixed rate, capacity cap, Allow decides admission.",
 		},
-		Ordinal:    8,
-		contentDir: "bucket",
+		Ordinal:          12,
+		Track:            TrackGateway,
+		Difficulty:       DifficultyAdvanced,
+		EstimatedMinutes: 25,
+		Prerequisites:    []string{"ctx"},
+		contentDir:       "bucket",
 	},
 	{
-		ID:          "breaker",
-		Title:       Locale{Zh: "熔断器状态机", En: "Circuit Breaker"},
+		ID:    "breaker",
+		Title: Locale{Zh: "熔断器状态机", En: "Circuit Breaker"},
 		Description: Locale{
 			Zh: "实现 Closed→Open→HalfOpen 熔断状态机，用注入时间驱动确定性转移。",
 			En: "Implement a Closed→Open→HalfOpen circuit breaker, driven by injected time for deterministic transitions.",
 		},
-		Ordinal:    9,
-		contentDir: "breaker",
+		Ordinal:          13,
+		Track:            TrackGateway,
+		Difficulty:       DifficultyAdvanced,
+		EstimatedMinutes: 28,
+		Prerequisites:    []string{"bucket"},
+		contentDir:       "breaker",
 	},
 	{
-		ID:          "retry",
-		Title:       Locale{Zh: "HTTP 重试与退避", En: "HTTP Retry & Backoff"},
+		ID:    "retry",
+		Title: Locale{Zh: "HTTP 重试与退避", En: "HTTP Retry & Backoff"},
 		Description: Locale{
 			Zh: "对不稳定的上游做指数退避重试，退避期间 context 取消能立即中断。",
 			En: "Retry a flaky upstream with exponential backoff that bails out the moment context is cancelled.",
 		},
-		Ordinal:      10,
-		AllowImports: []string{"net/http"},
-		contentDir:   "retry",
+		Ordinal:          14,
+		Track:            TrackGateway,
+		Difficulty:       DifficultyAdvanced,
+		EstimatedMinutes: 22,
+		Prerequisites:    []string{"breaker"},
+		AllowImports:     []string{"net/http"},
+		contentDir:       "retry",
 	},
 	{
-		ID:          "sse",
-		Title:       Locale{Zh: "SSE 流式转发", En: "SSE Streaming"},
+		ID:    "sse",
+		Title: Locale{Zh: "SSE 流式转发", En: "SSE Streaming"},
 		Description: Locale{
 			Zh: "用 http.Flusher 逐行转发上游 SSE 流并即时 flush——LLM 网关的看家本领。",
 			En: "Forward an upstream SSE stream line-by-line with http.Flusher — the heart of an LLM gateway.",
 		},
-		Ordinal:      11,
-		AllowImports: []string{"net/http"},
-		contentDir:   "sse",
+		Ordinal:          15,
+		Track:            TrackGateway,
+		Difficulty:       DifficultyAdvanced,
+		EstimatedMinutes: 25,
+		Prerequisites:    []string{"retry"},
+		AllowImports:     []string{"net/http"},
+		contentDir:       "sse",
 	},
 }
 
@@ -257,7 +401,8 @@ func (c Chapter) HintForLine(line int) (Hint, bool) {
 // `.txt` yields `<name>_test.go`, which `go test` discovers normally.
 //
 // Example: content/calc/tests/calculator_test.go.txt
-//        → {"calculator_test.go": <text>}
+//
+//	→ {"calculator_test.go": <text>}
 func (c Chapter) TestFiles() (map[string]string, error) {
 	testDir := c.contentDir + "/tests"
 	entries, err := fs.ReadDir(contentFS, testDir)

@@ -117,6 +117,26 @@ function handleMount(ed: editor.IStandaloneCodeEditor, monaco: typeof Monaco) {
   ed.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => emit('submit'))
 }
 
+// jumpTo moves the Monaco cursor to a specific line, focuses the editor,
+// and reveals the line in the viewport. Exposed so HintsPanel's "跳到这一行"
+// buttons can drive the editor — without this, the panel can only show
+// hints passively.
+function jumpTo(line: number) {
+  const ed = editorRef.value
+  const monaco = monacoRef.value
+  if (!ed || !monaco) return
+  const model = ed.getModel()
+  if (!model) return
+  const lineCount = model.getLineCount()
+  const safeLine = Math.max(1, Math.min(line, lineCount))
+  const column = model.getLineFirstNonWhitespaceColumn(safeLine) || 1
+  ed.setPosition({ lineNumber: safeLine, column })
+  ed.revealLineInCenter(safeLine)
+  ed.focus()
+}
+
+defineExpose({ jumpTo })
+
 watch(() => props.todos, applyDecorations, { deep: true })
 watch(() => props.modelValue, applyDecorations)
 watch(() => theme.isDark, applyTheme)
@@ -138,10 +158,9 @@ onBeforeUnmount(() => {
         @click="emit('submit')"
       >
         <span v-if="submitting" class="spinner" aria-hidden="true">···</span>
-        <template v-else>▶</template>
-        <span class="submit-label">{{ submitting ? $t('editor.submitting') : $t('editor.submit') }}</span>
+        <span class="submit-label">{{ submitting ? $t('editor.running') : $t('editor.run') }}</span>
       </button>
-      <span class="hint">{{ todos.length }} TODOs · ⌘/Ctrl+Enter</span>
+      <span class="hint">{{ $t('editor.shortcut', { count: todos.length }) }}</span>
     </div>
     <div ref="editorBodyRef" class="editor-body">
       <VueMonacoEditor

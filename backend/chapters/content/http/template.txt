@@ -1,0 +1,32 @@
+// Chapter 5: HTTP Handler Basics — the foundation every gateway chapter builds on.
+// Fill in the // TODO sections, then click Submit to verify.
+package main
+
+import (
+	"encoding/json"
+	"io"
+	"net/http"
+)
+
+// TODO 1: implement HealthHandler(w http.ResponseWriter, r *http.Request).
+//         Use WriteJSON to send status 200 with body map[string]bool{"ok": true}.
+
+// TODO 2: implement EchoHandler(w http.ResponseWriter, r *http.Request).
+//         Read the request body with io.ReadAll(r.Body). Don't forget to close it.
+//         Use WriteJSON to send status 200 with body map[string]string{"echo": "<body>"}.
+
+// TODO 3: implement NewRouter() http.Handler.
+//         Create an *http.ServeMux via http.NewServeMux,
+//         register HealthHandler at "/healthz" and EchoHandler at "/echo",
+//         return the mux.
+
+// TODO 4: implement WriteJSON(w http.ResponseWriter, status int, v any).
+//         Set Content-Type: application/json BEFORE calling WriteHeader,
+//         then encode v with a json.Encoder streamed into w.
+
+func main() {
+	// Handlers are exercised via httptest.NewRecorder in tests — the
+	// sandbox doesn't allow listeners, so main() doesn't call
+	// ListenAndServe. In a real app you would.
+	_ = NewRouter()
+}

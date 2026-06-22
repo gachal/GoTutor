@@ -1,0 +1,38 @@
+// Reference solution for Chapter 2: Structs & Methods.
+package main
+
+import (
+	"fmt"
+	"strings"
+)
+
+type Person struct {
+	Name   string
+	Age    int
+	Emails []string
+}
+
+func NewPerson(name string, age int) *Person {
+	return &Person{Name: name, Age: age}
+}
+
+func (p Person) String() string {
+	return fmt.Sprintf("%s (%d)", p.Name, p.Age)
+}
+
+func (p Person) HasEmail(e string) bool {
+	for _, email := range p.Emails {
+		if strings.EqualFold(email, e) {
+			return true
+		}
+	}
+	return false
+}
+
+func main() {
+	p := NewPerson("Alice", 30)
+	p.Emails = []string{"alice@example.com", "bob@example.com"}
+	fmt.Println(p.String())
+	fmt.Println(p.HasEmail("ALICE@example.com"))
+	fmt.Println(p.HasEmail("carol@example.com"))
+}

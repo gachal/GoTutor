@@ -7,10 +7,17 @@ A chapter is a single learning unit with:
 - **hints** — bilingual (zh + en) text for each TODO line
 - **tests** — `go test` cases the learner's code must pass
 - **solution** — reference solution, surfaced to the learner on demand via
-  the `GET /api/chapters/:id/solution` endpoint (shown in the chapter detail
-  view's "Recommended answer" modal)
+  the `GET /api/chapters/:id/solution` endpoint (shown in the chapter
+  detail view's "参考答案 / Reference solution" drawer)
 
-This document walks through adding Chapter 3: a `time` package exercise.
+Every chapter also carries metadata that drives the home screen:
+**Track** (which section it appears in), **Difficulty** (beginner /
+intermediate / advanced — informational only, doesn't gate access),
+**EstimatedMinutes** (shown on the card), and **Prerequisites**
+(informational list of chapter IDs the learner should have completed
+first). All four live on the `Chapter` struct in `registry.go`.
+
+This document walks through adding a `time` package exercise.
 
 ## 1. Pick an ID and concept
 
@@ -122,25 +129,33 @@ Edit `backend/chapters/registry.go`. Append to the `registry` slice:
 
 ```go
 {
-	ID:          "time",
-	Title:       Locale{Zh: "时间格式化", En: "Time Formatting"},
+	ID:    "time",
+	Title: Locale{Zh: "时间格式化", En: "Time Formatting"},
 	Description: Locale{
 		Zh: "用 time 包将 Duration 转成人类可读的字符串。",
 		En: "Convert a time.Duration into a human-readable string.",
 	},
-	Ordinal:      3,
+	Ordinal:          16, // next free slot — current registry uses 1–15
+	Track:            TrackFundamentals, // or TrackConcurrency / TrackGateway
+	Difficulty:       DifficultyBeginner, // beginner | intermediate | advanced
+	EstimatedMinutes: 12,
+	Prerequisites:    []string{"calc"}, // chapter IDs, informational only
 	// Optional: extend the verifier whitelist beyond the safe stdlib
 	// baseline. time/fmt/etc. are already allowed; you only need this
 	// for things like net/http.
 	// AllowImports: []string{"net/http"},
-	contentDir:   "time",
+	contentDir: "time",
 },
 ```
 
 All chapters are unlocked from the start — learners can explore any chapter
 freely (see `HandleListChapters` in `internal/api/chapters.go`, where
-`Unlocked` is always `true`). `Ordinal` only controls display order and
-sorting. `Completed` still reflects whether the user has ever passed.
+`Unlocked` is always `true`). `Ordinal` controls display order within a
+track. `Track` controls which home-screen section the card lands in
+(fundamentals / concurrency / gateway). `Difficulty` and
+`EstimatedMinutes` are informational card decorations.
+`Prerequisites` is shown as a soft hint but never gates access.
+`Completed` reflects whether the user has ever passed.
 
 ## 8. Test end-to-end
 

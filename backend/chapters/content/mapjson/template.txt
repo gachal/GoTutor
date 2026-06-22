@@ -1,0 +1,41 @@
+// Chapter 4: Maps & JSON — round-trip a request descriptor like a gateway does.
+// Fill in the // TODO sections, then click Submit to verify.
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+)
+
+// TODO 1: implement MarshalRequest(method, path string, headers map[string]string) ([]byte, error).
+//         Build a map[string]any with keys "method", "path", "headers" and
+//         return json.Marshal of it.
+
+// TODO 2: implement DecodeRequest(data []byte) (method, path string, headers map[string]string, err error).
+//         json.Unmarshal into a map[string]any, then type-assert each field.
+//         Return ("", "", nil, err) if unmarshaling fails or a field is the wrong type.
+
+// TODO 3: implement MergeHeaders(base, override map[string]string) map[string]string.
+//         Return a NEW map where override's keys take precedence over base's.
+//         Do NOT mutate base or override. If both are nil, return an empty
+//         (non-nil) map so callers can safely index the result.
+
+// TODO 4: implement PrettyJSON(v any) (string, error).
+//         Use json.MarshalIndent with a two-space indent. Return the JSON string.
+
+func main() {
+	data, _ := MarshalRequest("GET", "/v1/users", map[string]string{"Authorization": "Bearer tok"})
+	fmt.Println(string(data))
+
+	method, path, headers, _ := DecodeRequest(data)
+	fmt.Printf("method=%s path=%s headers=%v\n", method, path, headers)
+
+	merged := MergeHeaders(
+		map[string]string{"A": "1", "B": "2"},
+		map[string]string{"B": "20", "C": "3"},
+	)
+	fmt.Println(merged) // map[A:1 B:20 C:3]
+
+	pretty, _ := PrettyJSON(merged)
+	fmt.Println(pretty)
+}

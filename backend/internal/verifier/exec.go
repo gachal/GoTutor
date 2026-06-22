@@ -7,7 +7,6 @@ import (
 	"io"
 	"os/exec"
 	"runtime"
-	"syscall"
 	"time"
 )
 
@@ -46,13 +45,17 @@ func RunGoTest(ctx context.Context, dir string, goBin string, policy Policy) (Ex
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
 
-	// SIGKILL on context cancel. WaitDelay ensures orphan children
-	// (e.g. a subprocess spawned by user code) get reaped.
+	// Kill on context cancel. Process.Kill is cross-platform — on Unix
+	// it sends SIGKILL, on Windows it calls TerminateProcess. The old
+	// syscall.Kill(pid, SIGKILL) form compiled on darwin/linux but broke
+	// windows cross-compile ("undefined: syscall.Kill"). WaitDelay
+	// ensures orphan children (e.g. a subprocess spawned by user code)
+	// get reaped.
 	cmd.Cancel = func() error {
 		if cmd.Process == nil {
 			return nil
 		}
-		return syscall.Kill(cmd.Process.Pid, syscall.SIGKILL)
+		return cmd.Process.Kill()
 	}
 	cmd.WaitDelay = policy.WaitDelay
 

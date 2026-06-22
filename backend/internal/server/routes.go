@@ -42,6 +42,9 @@ func (s *Server) RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/chapters", func(c *gin.Context) {
 		api.HandleListChapters(c, db)
 	})
+	r.GET("/api/progress", func(c *gin.Context) {
+		api.HandleGetProgress(c, db)
+	})
 	r.GET("/api/chapters/:id/template", func(c *gin.Context) {
 		api.HandleGetTemplate(c, db)
 	})

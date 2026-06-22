@@ -2,10 +2,12 @@
 
 > English | [中文](ARCHITECTURE-zh.md)
 
-GoTutor teaches Go by having learners fill `// TODO` gaps in real
-mini-projects. The app verifies solutions by **actually compiling and
-running the learner's Go code** with `go test` — never by string
-matching. This document traces a submission end-to-end.
+GoTutor is a **muscle-memory gym for AI-era developers** — it teaches
+Go by having learners fill `// TODO` gaps in real mini-projects, verified
+by **actually compiling and running the learner's Go code** with
+`go test` (never string matching). Fifteen chapters ship in three tracks
+(fundamentals / concurrency / gateway patterns). This document traces a
+submission end-to-end.
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
@@ -41,15 +43,31 @@ matching. This document traces a submission end-to-end.
 ### Frontend (`frontend/src/`)
 - Vue 3 SPA, Pinia stores, vue-i18n (zh-CN + en), vue-router with hash
   history (Electron-friendly).
-- `App.vue`: sidebar with theme/locale toggles + chapter list with
-  lock/unlock/completed states.
+- `App.vue`: sidebar with theme/locale toggles + chapter list + `?`
+  help button (reopens the welcome overlay). Wraps `<RouterView>` in
+  a `<BootGate>` driven by the health store.
+- **Boot flow** (`stores/health.ts`): polls `/api/health` every 2s
+  until backend is up. While loading/down, `<BootGate>` shows a branded
+  spinner / Go-missing screen / backend-down retry screen instead of
+  the app. `WelcomeView` overlay shows once per locale-storage slot
+  (`stores/onboarding.ts`); dismissable via Skip or CTA.
+- `views/ChapterListView.vue`: orchestrator that renders
+  `OverallProgress` (top progress bar), `ContinueCard` ("continue
+  where you left off" hero from `/api/progress.lastChapterId`), then
+  one `TrackSection` per track (fixed order: fundamentals → concurrency
+  → gateway). Each section is a grid of `ChapterCard` components
+  showing ordinal, difficulty, estimated minutes, completion status,
+  and practice count (`stores/runs.ts`, localStorage).
 - `views/ChapterView.vue`: lazy-loads Monaco via
   `defineAsyncComponent` so the list view doesn't pay Monaco's ~3MB
-  cost.
+  cost. Phase 4 additions: `HintsPanel` (per-TODO hint cards with
+  jump-to-line buttons), friendly submit/run copy, removed duration
+  noise, first-time-pass celebration, failure coaching heuristic.
 - `components/CodeEditor.vue`: Monaco integration. Custom
   `gotutor-light` / `gotutor-dark` themes synced to the theme store.
   TODO decorations: glyph margin dot + line tint + hover hint.
-  ⌘/Ctrl+Enter submits.
+  ⌘/Ctrl+Enter submits. Exposes `jumpTo(line)` via `defineExpose` so
+  `HintsPanel` can drive the cursor.
 - `api/client.ts`: Axios with `Accept-Language` interceptor so the
   backend resolves locale on every request.
 
@@ -121,13 +139,24 @@ trivial — no CGO, no cross-compiler toolchain. `electron-builder.yml`
 bundles each binary into `Resources/backend/` via `extraResources`
 with `${os}-${arch}` substitution.
 
-## What's NOT in v1
+## What's NOT in v2
 
-- 11 chapters (calc, urlcheck + 9 advanced drawn from the AiDeptus gateway
-  patterns). Adding more: see
-  [ADDING_A_CHAPTER.md](./ADDING_A_CHAPTER.md).
+- 15 chapters across 3 tracks (fundamentals / concurrency / gateway).
+  Adding more: see [ADDING_A_CHAPTER.md](./ADDING_A_CHAPTER.md).
+- **Practice count is localStorage-only** (`stores/runs.ts`) — does not
+  sync across machines. The existing `progress` table records
+  completion in SQLite, so cross-reinstall completion state survives
+  but "练过 N 次" doesn't.
+- **"Last visited chapter" is derived from `progress.completed_at`** —
+  a true visits table (`chapter_visits`) is deferred to a future
+  release. The ContinueCard uses the most recently *passed* chapter,
+  which is the right UX 95% of the time but lags if the user is
+  mid-attempt on a new chapter.
+- **Hint coaching is single-level** — each TODO has one hint text. A
+  `why` field (concept-level coaching layered on top of the tactical
+  hint) is planned but not yet authored across all 15 chapters.
 - Unsigned macOS builds (Gatekeeper bypass documented in README).
 - Windows-specific resource limits (RLIMIT is Linux/BSD only). See
   [SECURITY.md](./SECURITY.md).
 - Auto-update (Phase 13+, not in current plan).
-- Multi-user progress (single-user model in v1).
+- Multi-user progress (single-user model in v2).

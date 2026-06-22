@@ -1,0 +1,31 @@
+// Chapter 2: Structs & Methods — the building block every later chapter uses.
+// Fill in the // TODO sections, then click Submit to verify.
+package main
+
+import (
+	"fmt"
+	"strings"
+)
+
+// TODO 1: declare a struct type named Person with three fields:
+//   Name   string
+//   Age    int
+//   Emails []string
+
+// TODO 2: write a constructor NewPerson(name string, age int) *Person
+// that returns a *Person with Name and Age set. Leave Emails nil.
+
+// TODO 3: add a value-receiver method String() string on Person
+// that formats as "Name (Age)" using fmt.Sprintf.
+
+// TODO 4: add a value-receiver method HasEmail(e string) bool on Person
+// that returns true if any email in p.Emails matches e case-insensitively
+// (use strings.EqualFold). Must not panic when Emails is nil.
+
+func main() {
+	p := NewPerson("Alice", 30)
+	p.Emails = []string{"alice@example.com", "bob@example.com"}
+	fmt.Println(p.String())
+	fmt.Println(p.HasEmail("ALICE@example.com"))
+	fmt.Println(p.HasEmail("carol@example.com"))
+}

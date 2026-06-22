@@ -1,25 +1,38 @@
 <script setup lang="ts">
-import { ref, watch, watchEffect, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue'
+// Chapter practice view — Monaco + HintsPanel + answer drawer + output panel.
+// Phase 4 changes vs the v1 layout:
+//   * Submit/run copy friendlier (运行测试 not 提交).
+//   * Duration + "unlocked next chapter" noise removed.
+//   * First-time pass shows a one-line celebration.
+//   * Failed runs show a coaching line + inline "see hints" link.
+//   * Hints are no longer hover-only — a "需要提示？" toggle opens a side
+//     panel listing every TODO with its hint and a jump-to-line button.
+//   * Each submit bumps the localStorage runs counter (drives the card's
+//     "练过 N 次" badge and the in-progress status).
+import { ref, watch, watchEffect, onMounted, onBeforeUnmount, defineAsyncComponent, computed } from 'vue'
 import { useChaptersStore } from '../stores/chapters'
 import { useLocaleStore } from '../stores/locale'
+import { useRunsStore } from '../stores/runs'
 import type { SubmitResult } from '../api/types'
+import HintsPanel from '../components/chapter/HintsPanel.vue'
 
-// Lazy-load Monaco (Phase 6 component) so the chapter list view doesn't
-// pay its ~3MB cost on first paint.
 const CodeEditor = defineAsyncComponent(() => import('../components/CodeEditor.vue'))
 
 const props = defineProps<{ id: string }>()
 const chapters = useChaptersStore()
 const locale = useLocaleStore()
+const runs = useRunsStore()
 
 const userCode = ref('')
 const submitting = ref(false)
 const result = ref<SubmitResult | null>(null)
 
-// Recommended-answer drawer state. The solution is fetched lazily the first
-// time the user opens the drawer (not on chapter load) to avoid an extra
-// round-trip for learners who never look at it. The drawer sits beside the
-// editor so the learner can copy directly into their code.
+// editorRef holds the unwrapped CodeEditor instance. We type-loosen it to
+// the exposed surface ({ jumpTo }) — the async wrapper still forwards
+// defineExpose correctly.
+const editorRef = ref<{ jumpTo?: (line: number) => void } | null>(null)
+
+const hintsOpen = ref(false)
 const solutionOpen = ref(false)
 const solutionCode = ref('')
 const solutionLoading = ref(false)
@@ -47,6 +60,10 @@ async function onSubmit() {
   if (submitting.value) return
   submitting.value = true
   result.value = null
+  // Bump practice count BEFORE checking the result so the card's "练过 N 次"
+  // badge and the in-progress status flip immediately on submit. firstTry
+  // (below) keys off this count being exactly 1.
+  runs.increment(props.id)
   try {
     const r = await chapters.submit(props.id, userCode.value)
     result.value = r
@@ -64,7 +81,6 @@ async function onSubmit() {
 }
 
 async function openSolution() {
-  // Avoid refetching if the drawer was already populated for this chapter.
   if (!solutionCode.value && !solutionError.value) {
     solutionLoading.value = true
     solutionError.value = null
@@ -89,8 +105,12 @@ async function copySolution() {
     copied.value = true
     setTimeout(() => (copied.value = false), 1500)
   } catch {
-    // clipboard may be unavailable (e.g. insecure context); ignore silently
+    // clipboard may be unavailable; ignore silently
   }
+}
+
+function jumpToLine(line: number) {
+  editorRef.value?.jumpTo?.(line)
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -100,13 +120,31 @@ function onKeydown(e: KeyboardEvent) {
 onMounted(() => window.addEventListener('keydown', onKeydown))
 onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
-// Reset cached solution when navigating between chapters so we don't show
-// chapter N's answer under chapter M's heading.
+// Reset cached state when navigating between chapters so we don't show
+// chapter N's answer/hints/output under chapter M's heading.
 watchEffect(() => {
   void props.id
   solutionCode.value = ''
   solutionError.value = null
   solutionOpen.value = false
+  hintsOpen.value = false
+  result.value = null
+})
+
+// Passed on first try — runs.counts was 0 before this submit bumped it to 1.
+const firstTry = computed(
+  () => result.value?.passed === true && runs.get(props.id) === 1,
+)
+
+// Failure coaching heuristic — pick a hint based on what the test output
+// mentions. Compile errors → "types or export names"; panics + everything
+// else → "look at the first failure".
+const failHintKey = computed(() => {
+  const out = result.value?.output ?? ''
+  if (/cannot use|undefined|cannot assign|does not match|not enough arguments|too many arguments/i.test(out)) {
+    return 'output.fail_hint_3'
+  }
+  return 'output.fail_hint_1'
 })
 </script>
 
@@ -118,21 +156,33 @@ watchEffect(() => {
           <h1>{{ chapters.findInList(id)?.title ?? id }}</h1>
           <p class="desc">{{ chapters.findInList(id)?.description }}</p>
         </div>
-        <button type="button" class="answer-btn" @click="openSolution">
-          {{ $t('solution.open') }}
-        </button>
+        <div class="header-actions">
+          <button type="button" class="hints-btn" @click="hintsOpen = !hintsOpen">
+            {{ hintsOpen ? $t('hints.toggle_hide') : $t('hints.toggle_show') }}
+          </button>
+          <button type="button" class="answer-btn" @click="openSolution">
+            {{ $t('solution.reference') }}
+          </button>
+        </div>
       </div>
     </header>
 
     <div class="main-row">
       <div class="editor-wrap">
         <CodeEditor
+          ref="editorRef"
           v-model="userCode"
           :todos="chapters.current?.todos ?? []"
           :submitting="submitting"
           @submit="onSubmit"
         />
       </div>
+
+      <HintsPanel
+        v-if="hintsOpen"
+        :todos="chapters.current?.todos ?? []"
+        @jump="jumpToLine"
+      />
 
       <aside v-if="solutionOpen" class="answer-panel" role="region" :aria-label="$t('solution.title')">
         <header class="panel-header">
@@ -160,17 +210,18 @@ watchEffect(() => {
       <div v-if="!result" class="empty">{{ $t('output.empty') }}</div>
       <template v-else>
         <div :class="['status', result.passed ? 'pass' : 'fail']">
-          <span class="status-icon">{{ result.passed ? '✅' : '❌' }}</span>
+          <span class="status-icon" aria-hidden="true">{{ result.passed ? '✓' : '✕' }}</span>
           <span class="status-text">
             {{ result.passed ? $t('output.passed') : $t('output.failed') }}
           </span>
-          <span v-if="result.passed && result.nextChapterUnlocked" class="status-extra">
-            · {{ $t('output.unlocked_next') }}
-          </span>
-          <span v-if="result.durationMs > 0" class="status-extra">
-            · {{ $t('output.duration', { ms: result.durationMs }) }}
-          </span>
         </div>
+        <p v-if="result.passed && firstTry" class="first-try">{{ $t('output.passed_first_time') }}</p>
+        <p v-else-if="!result.passed" class="fail-coach">
+          {{ $t(failHintKey) }}
+          <button v-if="!hintsOpen" type="button" class="inline-link" @click="hintsOpen = true">
+            {{ $t('output.show_hints') }}
+          </button>
+        </p>
         <pre v-if="result.output" :class="['output-pre', { pass: result.passed, fail: !result.passed }]">{{ result.output }}</pre>
       </template>
     </aside>
@@ -197,8 +248,13 @@ watchEffect(() => {
   font-size: var(--text-sm);
   margin-top: var(--space-1);
 }
-.answer-btn {
+.header-actions {
+  display: flex;
+  gap: var(--space-2);
   flex-shrink: 0;
+}
+.hints-btn,
+.answer-btn {
   background: transparent;
   color: var(--accent);
   border: 1px solid var(--accent);
@@ -208,13 +264,11 @@ watchEffect(() => {
   font-weight: 600;
   cursor: pointer;
 }
-.answer-btn:hover { background: color-mix(in oklch, var(--accent) 12%, transparent); }
+.hints-btn:hover,
+.answer-btn:hover {
+  background: color-mix(in oklch, var(--accent) 12%, transparent);
+}
 
-/* Editor + answer drawer side by side. The drawer is optional; when closed
-   the editor takes the full width. min-width:0 lets the editor shrink;
-   min-height:0 lets the whole row stay within its grid cell (the .chapter
-   grid's 1fr row) instead of being blown up by Monaco's intrinsic height —
-   without it the row grows to fit content and the page scrolls forever. */
 .main-row {
   display: flex;
   gap: var(--space-3);
@@ -319,17 +373,35 @@ watchEffect(() => {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-1);
+  gap: var(--space-2);
   font-size: var(--text-sm);
   font-weight: 600;
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-1);
 }
 .status.pass { color: var(--success); }
 .status.fail { color: var(--danger); }
 .status-icon { font-size: 15px; }
-.status-extra {
-  font-weight: 400;
+.first-try {
+  font-size: var(--text-sm);
+  color: var(--accent);
+  margin: 0 0 var(--space-2);
+  font-weight: 600;
+}
+.fail-coach {
+  font-size: var(--text-sm);
   color: var(--fg-muted);
+  margin: 0 0 var(--space-2);
+  line-height: 1.6;
+}
+.inline-link {
+  background: transparent;
+  border: 0;
+  color: var(--accent);
+  font-size: inherit;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-left: var(--space-2);
 }
 .output-pre {
   font-family: var(--font-mono);

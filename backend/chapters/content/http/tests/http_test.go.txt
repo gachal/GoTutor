@@ -1,0 +1,89 @@
+package main
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+)
+
+func TestHealthHandler(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	rec := httptest.NewRecorder()
+
+	HealthHandler(rec, req)
+
+	if rec.Code != 200 {
+		t.Errorf("status = %d, want 200", rec.Code)
+	}
+	if ct := rec.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
+		t.Errorf("Content-Type = %q, want application/json*", ct)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `"ok"`) || !strings.Contains(body, "true") {
+		t.Errorf(`body = %q, want {"ok":true}`, body)
+	}
+}
+
+func TestEchoHandler(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/echo", strings.NewReader("hello world"))
+	rec := httptest.NewRecorder()
+
+	EchoHandler(rec, req)
+
+	if rec.Code != 200 {
+		t.Errorf("status = %d, want 200", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "hello world") {
+		t.Errorf(`body = %q, want to contain "hello world"`, body)
+	}
+}
+
+func TestEchoHandlerEmptyBody(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/echo", nil)
+	rec := httptest.NewRecorder()
+
+	EchoHandler(rec, req) // must not panic
+
+	if rec.Code != 200 {
+		t.Errorf("status = %d, want 200", rec.Code)
+	}
+}
+
+func TestNewRouter(t *testing.T) {
+	r := NewRouter()
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	r.ServeHTTP(rec, req)
+	if rec.Code != 200 {
+		t.Errorf("healthz status = %d, want 200", rec.Code)
+	}
+
+	rec = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPost, "/echo", strings.NewReader("ping"))
+	r.ServeHTTP(rec, req)
+	if rec.Code != 200 {
+		t.Errorf("echo status = %d, want 200", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "ping") {
+		t.Errorf("echo body = %q, want to contain 'ping'", rec.Body.String())
+	}
+}
+
+func TestWriteJSONSetsContentTypeBeforeStatus(t *testing.T) {
+	rec := httptest.NewRecorder()
+	WriteJSON(rec, 418, map[string]string{"error": "teapot"})
+
+	if rec.Code != 418 {
+		t.Errorf("status = %d, want 418", rec.Code)
+	}
+	if ct := rec.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
+		t.Errorf("Content-Type = %q, want application/json* (was it set AFTER WriteHeader?)", ct)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "teapot") {
+		t.Errorf("body = %q, want to contain 'teapot'", body)
+	}
+}

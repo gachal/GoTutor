@@ -1,6 +1,6 @@
 app:
   name: GoTutor
-  tagline: Learn Go by filling in real projects
+  tagline: A muscle-memory gym for AI-era developers
 sidebar:
   title: Chapters
   theme:
@@ -23,26 +23,122 @@ editor:
   hint: Hint
   reset: Reset code
   shortcut_submit: '⌘/Ctrl + Enter to submit'
+  run: Run tests
+  running: Running…
+  shortcut: '{count} TODOs · ⌘/Ctrl + Enter to run'
 output:
   title: Output
-  empty: Test results will appear here after you submit
-  passed: Passed!
-  failed: Failed
+  empty: No test run yet. Click "Run tests" up top, or press ⌘/Ctrl + Enter.
+  passed: Tests passed
+  failed: Didn't pass — try again
+  passed_first_time: First try! Nice.
   duration: '{ms} ms'
   unlocked_next: Next chapter unlocked
+  fail_hint_1: Look at the first test failure — that's usually the real issue.
+  fail_hint_2: Error mentions a line? Jump there and read around it.
+  fail_hint_3: Compile errors (cannot use / undefined) are usually types or export names.
+  show_hints: Still stuck? See hints
 solution:
   open: Recommended answer
-  title: Recommended answer
-  subtitle: One possible reference solution — yours may differ and still pass.
+  title: Reference solution
+  subtitle: One workable version. Yours may differ and still pass.
+  reference: Show reference solution
+  reference_sub: Last resort. Read it, then type it yourself — don't copy-paste.
   close: Close
   loading: Loading…
   load_error: Failed to load the answer
   copy: Copy
   copied: Copied
+hints:
+  title: Hints
+  subtitle: Coach-style hints — the why, not the answer.
+  toggle_show: Need a hint?
+  toggle_hide: Hide hints
+  jump: Jump to line
+  no_hint: No dedicated hint for this line. Read the surrounding comments and the test cases.
 errors:
-  backend_down: Cannot reach the backend service
-  unknown: Something went wrong
+  backend_down: Backend isn't up — give it a few seconds or hit retry.
+  server_hiccup: Server hiccup. Try again.
+  bad_request: Bad request. Refresh and try again; if it keeps happening, let us know.
+  unknown: Something went wrong and we're not sure why. Restarting the app usually fixes it.
 common:
   cancel: Cancel
   confirm: Confirm
   retry: Retry
+# === Phase 3: chapter list redesign + retention ===
+tracks:
+  fundamentals:
+    title: Fundamentals
+    subtitle: Syntax, data structures, HTTP — from zero to real code
+  concurrency:
+    title: Concurrency
+    subtitle: goroutines, channels, context — Go's superpower
+  gateway:
+    title: Gateway Patterns
+    subtitle: Nine production patterns drawn from a real LLM gateway
+difficulty:
+  beginner: Beginner
+  intermediate: Intermediate
+  advanced: Advanced
+card:
+  status:
+    completed: Passed
+    in_progress: In progress
+    not_started: Not started
+  practiced: Practiced {count}×
+estimated_time: ~{minutes} min
+continue:
+  label: Continue where you left off
+  subtitle: Last time you were on "{title}"
+  cta: Continue
+all_done:
+  title: All chapters passed
+  body: You've cleared every chapter. Come back and retype them — that's how muscle memory sticks.
+overall:
+  progress: '{done} / {total} chapters passed'
+# === Phase 2: first-run experience + Go-missing recovery ===
+boot:
+  loading: Starting GoTutor…
+welcome:
+  title: Welcome to GoTutor
+  subtitle: A muscle-memory gym for AI-era developers
+  body: |
+    You already know how to code — maybe you even let AI write a lot of it.
+    But when AI hands you a chunk of Go, can you tell at a glance if it's idiomatic?
+    GoTutor doesn't teach you "what a variable is." It makes your hands type
+    out the patterns real Go projects use: fill the blanks, run the tests,
+    and the muscle memory takes care of itself.
+  step_1: 1. Open a chapter — each one is a real mini-project with a few // TODO markers waiting for you
+  step_2: 2. Type, then run the tests — not string matching, real go test against your code
+  step_3: 3. Stuck? Click "Need a hint?" — hints coach you on the why, not the answer
+  cta: Start the first chapter
+  skip: Skip — I'll explore on my own
+  reopen_label: Help
+go_missing:
+  title: One more step — Go needs to be installed
+  body_1: GoTutor runs your code through real go test, so the Go toolchain must be on this machine.
+  body_2: Once it's installed, come back here and click the button below — you'll be coding in seconds.
+  install_mac:
+    label: Install on macOS
+    step_1: 'With Homebrew (recommended):'
+    step_2: 'Or download the official installer:'
+    download: Download Go installer
+  install_windows:
+    label: Install on Windows
+    step_1: 'Download the official installer (.msi):'
+    download: Download Go installer
+    step_2: Double-click and follow the wizard
+  install_linux:
+    label: Install on Linux
+    step_1: 'Grab the tarball from the official site:'
+    download: Download Go tarball
+    step_2: Extract to /usr/local/go and add /usr/local/go/bin to PATH
+  recheck: I've installed it — check again
+  rechecking: Checking…
+  why_go: Why does GoTutor need Go?
+  why_go_body: GoTutor writes your code to a temp file and calls real go test against it. Unlike an online playground — you practice on your own machine, that's how the muscle memory sticks.
+backend_down:
+  title: Backend service isn't responding
+  body: GoTutor's backend process isn't answering. Usually that's a slow first launch or a firewall block.
+  retry: Retry
+  log_hint: If it keeps failing, logs are written to

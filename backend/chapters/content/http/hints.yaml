@@ -1,0 +1,18 @@
+# hints.yaml — per-TODO hint text for the HTTP Handler Basics chapter.
+todos:
+  - line: 13
+    hint:
+      zh: `http.ResponseWriter` 是个接口，`w` 就是响应写入器。HealthHandler 的任务很简单：用 WriteJSON（下面 TODO 4 会实现）写一个 200 + `{"ok": true}`。WriteJSON 帮你处理 Content-Type 和状态码——你不要在这里直接写 w.WriteHeader，否则会重复。
+      en: `http.ResponseWriter` is an interface; `w` is your response writer. HealthHandler's job is simple: use WriteJSON (you'll implement it in TODO 4) to send 200 + `{"ok": true}`. WriteJSON handles Content-Type and status — don't call w.WriteHeader here, you'd duplicate the work.
+  - line: 17
+    hint:
+      zh: 读 body 的标准三步：`body, err := io.ReadAll(r.Body)`；`defer r.Body.Close()`（关掉，否则连接泄漏）；处理 err。然后把 body 字符串塞进 `{"echo": string(body)}` 用 WriteJSON 写回。注意 r.Body 是 `io.ReadCloser`，不关会让 keep-alive 连接慢慢漏掉。
+      en: Read body in three steps: `body, err := io.ReadAll(r.Body)`; `defer r.Body.Close()` (close it or connections leak); handle err. Then wrap the body string in `{"echo": string(body)}` and WriteJSON it back. r.Body is an `io.ReadCloser` — leaving it open slowly leaks keep-alive connections.
+  - line: 22
+    hint:
+      zh: `mux := http.NewServeMux()` 创建路由器。`mux.HandleFunc("/healthz", HealthHandler)` 注册路径——注意 HealthHandler 是 `http.HandlerFunc` 兼容的签名（func(w, r)），所以可以直接传函数值。注册 "/echo" 同理。返回 mux。一个常见的坑：路径以 "/" 结尾（如 "/healthz/"）会做前缀匹配，无 "/" 是精确匹配。这里用精确。
+      en: `mux := http.NewServeMux()` makes a router. `mux.HandleFunc("/healthz", HealthHandler)` registers the path — HealthHandler has the `http.HandlerFunc`-compatible signature (func(w, r)), so you can pass the function value directly. Same for "/echo". Return mux. Gotcha: trailing slash (e.g. "/healthz/") means prefix-match; no slash means exact-match. We want exact here.
+  - line: 27
+    hint:
+      zh: **顺序极其重要**：必须先 `w.Header().Set("Content-Type", "application/json")`，再 `w.WriteHeader(status)`，最后写 body。一旦调用 WriteHeader，Header() 的修改就生效不了——这是 net/http 包的硬性约束。然后用 `json.NewEncoder(w).Encode(v)`——比 `Marshal` + `w.Write` 更高效（少一次内存拷贝），还会自动加换行。
+      en: **Order matters**: `w.Header().Set("Content-Type", "application/json")` FIRST, then `w.WriteHeader(status)`, then write body. Once WriteHeader is called, Header() changes are ignored — that's a hard net/http constraint. Then use `json.NewEncoder(w).Encode(v)` — more efficient than `Marshal` + `w.Write` (one less copy) and adds a trailing newline for free.

@@ -1,7 +1,7 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { existsSync } from 'fs'
-import { detectGo } from './goDetector'
+import { detectGo, type GoInfo } from './goDetector'
 import { spawnBackend, BackendHandle } from './backend'
 
 // Fixed port — the frontend hardcodes http://localhost:8081/api in
@@ -11,15 +11,27 @@ const BACKEND_PORT = 8081
 let backend: BackendHandle | null = null
 let mainWindow: BrowserWindow | null = null
 
+// capturedGoInfo is set once at bootstrap() and read by the get-go-info
+// IPC handler. The preload memoizes the promise so this only fires once
+// per renderer.
+let capturedGoInfo: GoInfo = { found: false, version: '', path: '' }
+
 const DEV_SERVER_URL = process.env.GOTUTOR_DEV_URL || 'http://localhost:5173'
 
 async function bootstrap() {
   const go = detectGo()
+  capturedGoInfo = go
   if (!go.found) {
     console.warn('[gotutor] Go toolchain not found on PATH')
   } else {
     console.log(`[gotutor] Go: ${go.version} @ ${go.path}`)
   }
+
+  // IPC handlers for the preload's getGoInfo / getLogPath. These power
+  // the Go-missing screen (install hints) and the backend-down screen
+  // (log file location for troubleshooting).
+  ipcMain.handle('get-go-info', () => capturedGoInfo)
+  ipcMain.handle('get-log-path', () => join(app.getPath('logs'), 'backend.log'))
 
   backend = spawnBackend()
   backend.port = BACKEND_PORT
@@ -30,12 +42,10 @@ async function bootstrap() {
     }
   })
 
-  // Give the backend a moment to bind before opening the window so the
-  // first /api/chapters fetch doesn't get ECONNREFUSED. 500ms is plenty
-  // for a Gin server cold-start; if it's not up by then the frontend
-  // shows its "backend down" state and the user can retry.
-  await new Promise((r) => setTimeout(r, 500))
-
+  // Open the window immediately — the renderer's boot gate now shows a
+  // branded loading state and polls /api/health every 2s. The old 500ms
+  // hardcoded delay was a fragile hack; this is faster AND recovers
+  // automatically when the backend takes longer than expected to start.
   createWindow()
 }
 

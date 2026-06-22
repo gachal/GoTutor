@@ -1,0 +1,87 @@
+package main
+
+import (
+	"reflect"
+	"testing"
+)
+
+func TestFilter(t *testing.T) {
+	in := []int{1, 2, 3, 4, 5, 6}
+	got := Filter(in, func(x int) bool { return x%2 == 0 })
+	want := []int{2, 4, 6}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Filter even = %v, want %v", got, want)
+	}
+
+	gotNone := Filter(in, func(x int) bool { return false })
+	if len(gotNone) != 0 {
+		t.Errorf("Filter none = %v, want empty/nil", gotNone)
+	}
+
+	if !reflect.DeepEqual(in, []int{1, 2, 3, 4, 5, 6}) {
+		t.Errorf("Filter mutated input: %v", in)
+	}
+}
+
+func TestMap(t *testing.T) {
+	in := []int{1, 2, 3}
+	got := Map(in, func(x int) int { return x * x })
+	want := []int{1, 4, 9}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Map square = %v, want %v", got, want)
+	}
+
+	gotEmpty := Map([]int{}, func(x int) int { return x })
+	if len(gotEmpty) != 0 {
+		t.Errorf("Map empty = %v, want empty", gotEmpty)
+	}
+}
+
+func TestUnique(t *testing.T) {
+	cases := []struct {
+		name string
+		in   []int
+		want []int
+	}{
+		{"duplicates", []int{1, 2, 2, 3, 3, 3, 4}, []int{1, 2, 3, 4}},
+		{"already_unique", []int{5, 6, 7}, []int{5, 6, 7}},
+		{"all_same", []int{9, 9, 9, 9}, []int{9}},
+		{"empty", []int{}, []int{}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := Unique(tc.in)
+			if len(got) == 0 && len(tc.want) == 0 {
+				return
+			}
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("Unique(%v) = %v, want %v", tc.in, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestChunk(t *testing.T) {
+	in := []int{1, 2, 3, 4, 5, 6}
+
+	got := Chunk(in, 2)
+	want := [][]int{{1, 2}, {3, 4}, {5, 6}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Chunk(2) = %v, want %v", got, want)
+	}
+
+	got = Chunk(in, 4)
+	want = [][]int{{1, 2, 3, 4}, {5, 6}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Chunk(4) = %v, want %v", got, want)
+	}
+
+	got = Chunk(in, 0)
+	if got != nil {
+		t.Errorf("Chunk(0) = %v, want nil", got)
+	}
+	got = Chunk(in, -1)
+	if got != nil {
+		t.Errorf("Chunk(-1) = %v, want nil", got)
+	}
+}

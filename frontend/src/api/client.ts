@@ -7,6 +7,7 @@ import type {
   SolutionResponse,
   SubmitRequest,
   HealthResponse,
+  ProgressResponse,
 } from './types'
 
 // Locale is module-level so the locale store can set it without
@@ -63,5 +64,12 @@ export const api = {
     reset(): Promise<void> {
       return instance.post('/reset').then(() => undefined)
     },
+  },
+
+  // Aggregate progress (overall + per-track + last chapter). Powers the
+  // chapter list's overall progress bar, the "continue where you left
+  // off" hero, and per-track completion counts.
+  progress(): Promise<ProgressResponse> {
+    return instance.get('/progress').then((r) => r.data)
   },
 }

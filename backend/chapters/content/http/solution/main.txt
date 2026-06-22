@@ -1,0 +1,39 @@
+// Reference solution for Chapter 5: HTTP Handler Basics.
+package main
+
+import (
+	"encoding/json"
+	"io"
+	"net/http"
+)
+
+func HealthHandler(w http.ResponseWriter, r *http.Request) {
+	WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+func EchoHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "read body failed"})
+		return
+	}
+	defer r.Body.Close()
+	WriteJSON(w, http.StatusOK, map[string]string{"echo": string(body)})
+}
+
+func NewRouter() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/healthz", HealthHandler)
+	mux.HandleFunc("/echo", EchoHandler)
+	return mux
+}
+
+func WriteJSON(w http.ResponseWriter, status int, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(v)
+}
+
+func main() {
+	_ = NewRouter()
+}

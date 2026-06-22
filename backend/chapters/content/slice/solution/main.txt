@@ -1,0 +1,61 @@
+// Reference solution for Chapter 3: Slice Operations.
+package main
+
+import (
+	"fmt"
+)
+
+func Filter(xs []int, keep func(int) bool) []int {
+	var out []int
+	for _, x := range xs {
+		if keep(x) {
+			out = append(out, x)
+		}
+	}
+	return out
+}
+
+func Map(xs []int, fn func(int) int) []int {
+	out := make([]int, len(xs))
+	for i, x := range xs {
+		out[i] = fn(x)
+	}
+	return out
+}
+
+func Unique(xs []int) []int {
+	seen := map[int]struct{}{}
+	var out []int
+	for _, x := range xs {
+		if _, ok := seen[x]; !ok {
+			seen[x] = struct{}{}
+			out = append(out, x)
+		}
+	}
+	return out
+}
+
+func Chunk(xs []int, size int) [][]int {
+	if size <= 0 {
+		return nil
+	}
+	var out [][]int
+	for i := 0; i < len(xs); i += size {
+		end := i + size
+		if end > len(xs) {
+			end = len(xs)
+		}
+		out = append(out, xs[i:end])
+	}
+	return out
+}
+
+func main() {
+	xs := []int{1, 2, 3, 4, 5, 6}
+	fmt.Println(Filter(xs, func(x int) bool { return x%2 == 0 }))
+	fmt.Println(Map(xs, func(x int) int { return x * x }))
+	fmt.Println(Unique([]int{1, 2, 2, 3, 3, 3, 4}))
+	fmt.Println(Chunk(xs, 2))
+	fmt.Println(Chunk(xs, 4))
+	fmt.Println(Chunk(xs, 0))
+}

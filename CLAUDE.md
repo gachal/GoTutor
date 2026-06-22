@@ -3,13 +3,15 @@
 This file provides guidance to Claude Code (claude.ai/code) when working
 with code in this repository.
 
-## Status: v1 shipped
+## Status: v2 shipped
 
-GoTutor v1 is a working cross-platform desktop app for learning Go via
-`// TODO` mini-projects. Backend, frontend, and Electron shell are all
-wired end-to-end; all eleven chapters (calc, urlcheck + 9 advanced drawn
-from the AiDeptus gateway patterns) play through the full Monaco +
-sandboxed-go-test flow.
+GoTutor v2 is a working cross-platform desktop app — a **muscle-memory
+gym for AI-era developers**. Backend, frontend, and Electron shell are
+wired end-to-end; all **fifteen chapters** across three tracks
+(fundamentals / concurrency / gateway patterns) play through the full
+Monaco + sandboxed-go-test flow. The home screen shows progress + a
+"continue where you left off" entry; first-run onboarding + an
+install-Go recovery screen ship out of the box.
 
 Read the docs first when picking up context:
 - [docs/PACKAGING.md](docs/PACKAGING.md) — build `.dmg`/`.exe`/`.AppImage`, Gatekeeper bypass, troubleshooting
@@ -94,4 +96,3 @@ make package-win                      # release/GoTutor-Setup-<ver>-x64.exe
 - **Windows-specific RLIMIT_* enforcement** missing — see SECURITY.md.
 - **No CI release workflow yet** — `.github/workflows/ci.yml` exists
   but release.yml is TODO.
-- **Welcome overlay / first-run tutorial** planned but not shipped.

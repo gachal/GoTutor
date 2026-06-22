@@ -2,23 +2,34 @@
 
 > English | [中文](README-zh.md)
 
-An interactive desktop app for learning Go by filling in `// TODO` gaps
-in real mini-projects. The app actually compiles and runs your code with
-`go test` — no string matching.
+A **muscle-memory gym for AI-era developers**. You already write code —
+maybe even let AI write a lot of it. GoTutor makes your hands type out
+the patterns real Go projects use, filling `// TODO` gaps in genuine
+mini-projects. The app compiles and runs your code with real `go test`
+— no string matching, no fake REPL. The drills build the muscle memory
+that copy-paste from AI erodes.
 
 ## Status
 
-Ships **eleven chapters** end-to-end:
-- **Two foundational chapters** — `calc` (CLI calculator: `os.Args`,
-  `strconv`, switch dispatch, division-by-zero) and `urlcheck`
-  (concurrent URL checker: goroutines, channels, `sync.WaitGroup`,
+Ships **fifteen chapters** end-to-end, organized into three tracks:
+
+- **Fundamentals (5)** — `calc` (CLI calculator), `structs` (structs &
+  methods), `slice` (Filter/Map/Unique/Chunk), `mapjson` (JSON
+  round-trip), `http` (Handler basics). Builds the syntax muscle memory
+  every later chapter assumes.
+- **Concurrency (1)** — `urlcheck` (goroutines, channels, WaitGroup,
   `net/http` client).
-- **Nine advanced chapters** drawn from the Go patterns used in a real
+- **Gateway Patterns (9)** — drawn from the Go patterns used in a real
   LLM API gateway (AiDeptus): error handling, interfaces & strategy,
   concurrent sum, channels & select, context cancellation, token-bucket
-  rate limiting, circuit breaker, HTTP retry & backoff, and SSE streaming.
+  rate limiting, circuit breaker, HTTP retry & backoff, SSE streaming.
 
 All play through the full Monaco editor + sandboxed `go test` flow.
+
+The home screen shows your overall progress, a "continue where you left
+off" entry, and a per-chapter card with difficulty + estimated minutes +
+practice count. A first-run welcome overlay explains the practice model;
+an install-Go screen appears if the toolchain is missing.
 
 ## Stack
 
@@ -80,7 +91,8 @@ to all four targets without a C toolchain per OS.
 | Endpoint                              | Method | Body                          | Returns                              |
 |---------------------------------------|--------|-------------------------------|--------------------------------------|
 | `/api/health`                         | GET    | —                             | `{ok, port, goFound, goVersion}`     |
-| `/api/chapters`                       | GET    | —                             | `Chapter[]` (locale-aware)           |
+| `/api/chapters`                       | GET    | —                             | `Chapter[]` with track/difficulty/estimatedMinutes/prerequisites |
+| `/api/progress`                       | GET    | —                             | `{totalChapters, completedChapters, percent, lastChapterId, byTrack}` |
 | `/api/chapters/:id/template`          | GET    | —                             | `{code, todos: [{line, hint}]}`      |
 | `/api/chapters/:id/hint?line=N`       | GET    | —                             | `{text}`                             |
 | `/api/chapters/:id/submit`            | POST   | `{userCode: string}`          | `{passed, output, durationMs, ...}`  |
@@ -97,7 +109,7 @@ to all four targets without a C toolchain per OS.
 - [Security model](docs/SECURITY.md) — what the sandbox defends against,
   residual risks, future hardening (RLIMIT, Docker).
 - [Adding a chapter](docs/ADDING_A_CHAPTER.md) — write your own
-  exercises (9 advanced chapters already cover gateway patterns).
+  exercises (15 chapters across 3 tracks already ship).
 
 ## License
 

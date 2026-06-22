@@ -1,0 +1,74 @@
+// Reference solution for Chapter 4: Maps & JSON.
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+)
+
+func MarshalRequest(method, path string, headers map[string]string) ([]byte, error) {
+	m := map[string]any{
+		"method":  method,
+		"path":    path,
+		"headers": headers,
+	}
+	return json.Marshal(m)
+}
+
+func DecodeRequest(data []byte) (method, path string, headers map[string]string, err error) {
+	var m map[string]any
+	if err = json.Unmarshal(data, &m); err != nil {
+		return "", "", nil, err
+	}
+	if v, ok := m["method"].(string); ok {
+		method = v
+	}
+	if v, ok := m["path"].(string); ok {
+		path = v
+	}
+	if v, ok := m["headers"].(map[string]any); ok {
+		headers = make(map[string]string, len(v))
+		for k, val := range v {
+			if s, ok := val.(string); ok {
+				headers[k] = s
+			}
+		}
+	}
+	return method, path, headers, nil
+}
+
+func MergeHeaders(base, override map[string]string) map[string]string {
+	out := make(map[string]string)
+	for k, v := range base {
+		out[k] = v
+	}
+	for k, v := range override {
+		out[k] = v
+	}
+	return out
+}
+
+func PrettyJSON(v any) (string, error) {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func main() {
+	data, _ := MarshalRequest("GET", "/v1/users", map[string]string{"Authorization": "Bearer tok"})
+	fmt.Println(string(data))
+
+	method, path, headers, _ := DecodeRequest(data)
+	fmt.Printf("method=%s path=%s headers=%v\n", method, path, headers)
+
+	merged := MergeHeaders(
+		map[string]string{"A": "1", "B": "2"},
+		map[string]string{"B": "20", "C": "3"},
+	)
+	fmt.Println(merged)
+
+	pretty, _ := PrettyJSON(merged)
+	fmt.Println(pretty)
+}

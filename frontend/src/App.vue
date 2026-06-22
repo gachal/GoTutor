@@ -3,23 +3,43 @@ import { onMounted, watch } from 'vue'
 import { useThemeStore } from './stores/theme'
 import { useLocaleStore } from './stores/locale'
 import { useChaptersStore } from './stores/chapters'
+import { useHealthStore } from './stores/health'
+import { useOnboardingStore } from './stores/onboarding'
 import { setI18nLocale } from './i18n'
+import BootGate from './components/BootGate.vue'
+import WelcomeView from './views/WelcomeView.vue'
 
 const theme = useThemeStore()
 const locale = useLocaleStore()
 const chapters = useChaptersStore()
+const health = useHealthStore()
+const onboarding = useOnboardingStore()
 
-// When the language changes: switch static UI strings, point API requests
-// at the new locale (Accept-Language), AND re-fetch the chapter list so the
-// titles/descriptions (which the backend localizes server-side) refresh.
-// Detail-page template re-fetch is handled per-view in ChapterView.vue.
+// Locale switch: refresh static UI strings, point API at the new locale
+// (Accept-Language), AND re-fetch the chapter list so titles/descriptions
+// (which the backend localizes server-side) refresh. Detail-page template
+// re-fetch is handled per-view in ChapterView.vue.
+//
+// The fetchList() call is gated on health.status === 'ready' so a locale
+// toggle during the boot gate doesn't trip ECONNREFUSED.
 watch(() => locale.locale, (l) => {
   setI18nLocale(l)
-  chapters.fetchList()
+  if (health.status === 'ready') chapters.fetchList()
 }, { immediate: true })
 
+// Boot the health poller immediately — it drives the boot gate. When the
+// gate flips to ready, fetch the chapter list. This is the only path
+// that touches /api/chapters before the user sees the home screen, so
+// ECONNREFUSED on a cold backend is impossible (the gate holds until
+// /api/health succeeds).
 onMounted(() => {
-  chapters.fetchList()
+  health.startPolling()
+})
+
+watch(() => health.status, (s) => {
+  if (s === 'ready' && chapters.list.length === 0) {
+    chapters.fetchList()
+  }
 })
 </script>
 
@@ -27,8 +47,19 @@ onMounted(() => {
   <div class="app-shell">
     <aside class="sidebar">
       <header class="app-header">
-        <h1 class="app-name">{{ $t('app.name') }}</h1>
-        <p class="app-tagline">{{ $t('app.tagline') }}</p>
+        <div class="app-header-row">
+          <div class="app-header-text">
+            <h1 class="app-name">{{ $t('app.name') }}</h1>
+            <p class="app-tagline">{{ $t('app.tagline') }}</p>
+          </div>
+          <button
+            type="button"
+            class="help-btn"
+            :title="$t('welcome.reopen_label')"
+            :aria-label="$t('welcome.reopen_label')"
+            @click="onboarding.reopen"
+          >?</button>
+        </div>
       </header>
 
       <div class="toggles">
@@ -78,8 +109,13 @@ onMounted(() => {
     </aside>
 
     <main class="content">
-      <RouterView />
+      <BootGate v-if="health.status !== 'ready'" />
+      <RouterView v-else />
     </main>
+
+    <!-- Welcome overlay sits at the shell root so it can cover the whole
+         window with position:fixed, regardless of which route is active. -->
+    <WelcomeView v-if="health.status === 'ready'" />
   </div>
 </template>
 
@@ -100,6 +136,13 @@ onMounted(() => {
   overflow-y: auto;
 }
 
+.app-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
 .app-name {
   font-size: 22px;
   font-weight: 700;
@@ -110,6 +153,26 @@ onMounted(() => {
   font-size: var(--text-sm);
   color: var(--fg-muted);
   margin-top: var(--space-1);
+}
+
+.help-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  margin-top: 2px;
+}
+.help-btn:hover {
+  background: var(--surface-2);
+  color: var(--fg);
 }
 
 .toggles {

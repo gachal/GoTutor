@@ -10,11 +10,43 @@ type Chapter struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Ordinal     int    `json:"ordinal"`
+	// Track groups this chapter in the UI ("fundamentals" / "concurrency"
+	// / "gateway"). Drives the sectioned chapter list. The frontend owns
+	// display order; this field carries identity only.
+	Track string `json:"track"`
+	// Difficulty is "beginner" | "intermediate" | "advanced". Shown on
+	// the chapter card. Informational — does NOT gate access.
+	Difficulty string `json:"difficulty"`
+	// EstimatedMinutes is the approximate time-to-pass, shown on the card.
+	EstimatedMinutes int `json:"estimatedMinutes"`
+	// Prerequisites lists chapter IDs the learner should have completed
+	// first. Informational — does NOT gate access.
+	Prerequisites []string `json:"prerequisites"`
 	// Completed is true iff the user has ever passed this chapter's verifier.
 	Completed bool `json:"completed"`
 	// Unlocked is true iff the user is allowed to attempt this chapter
 	// (chapter 1 always is; chapter N requires chapter N-1 completed).
 	Unlocked bool `json:"unlocked"`
+}
+
+// TrackProgress is one track's contribution to ProgressResponse.ByTrack.
+type TrackProgress struct {
+	Track             string `json:"track"`
+	TotalChapters     int    `json:"totalChapters"`
+	CompletedChapters int    `json:"completedChapters"`
+}
+
+// ProgressResponse is the body of GET /api/progress. Powers the overall
+// progress bar, the "continue where you left off" hero, and per-track
+// completion counts in the chapter list. LastChapterID is the most
+// recently passed chapter (Phase 1 fallback for "last visited" — a
+// visits table lands later).
+type ProgressResponse struct {
+	TotalChapters     int             `json:"totalChapters"`
+	CompletedChapters int             `json:"completedChapters"`
+	Percent           int             `json:"percent"`
+	LastChapterID     string          `json:"lastChapterId"`
+	ByTrack           []TrackProgress `json:"byTrack"`
 }
 
 // Todo marks one // TODO line in a chapter template. Line is 1-based.

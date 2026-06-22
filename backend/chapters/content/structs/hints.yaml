@@ -1,0 +1,19 @@
+# hints.yaml — per-TODO hint text for the Structs & Methods chapter.
+# Keyed by line number (1-based) of the corresponding // TODO in template.txt.
+todos:
+  - line: 11
+    hint:
+      zh: 用 `type Person struct { ... }` 声明结构体。每个字段一行 `字段名 类型`。Go 的字段名首字母大写表示包外可访问——这里都要大写，因为测试在另一个文件里（同 package main，但保持一致性）。
+      en: Declare with `type Person struct { ... }`. Each field is `FieldName Type` on its own line. Capitalized field names mean "exported" — keep them capitalized here for consistency.
+  - line: 16
+    hint:
+      zh: 构造函数是 Go 里建立"字段必然初始化"约定的方式——返回 `&Person{Name: name, Age: age}`。用指针返回值是为了让调用方拿到的是同一个实例，后续修改（比如 append Emails）能反映出来。
+      en: Constructor functions are Go's idiom for "fields always initialized" — return `&Person{Name: name, Age: age}`. Pointer return so later mutations (like appending Emails) are visible to the caller.
+  - line: 20
+    hint:
+      zh: 值接收器（`func (p Person) String()`）vs 指针接收器（`func (p *Person) String()`）：只读就用值接收器，要改 p 就用指针。String() 是只读，用值接收器。格式化用 `fmt.Sprintf("%s (%d)", p.Name, p.Age)`。
+      en: Value receiver `func (p Person) String()` vs pointer receiver `func (p *Person) String()`: value for read-only, pointer when you mutate p. String() is read-only — value receiver. Format with `fmt.Sprintf("%s (%d)", p.Name, p.Age)`.
+  - line: 24
+    hint:
+      zh: 遍历 `p.Emails`，用 `strings.EqualFold(email, e)` 做大小写无关比较——不要用 `==`，因为 `==` 是大小写敏感的，"ALICE@x.com" != "alice@x.com"。如果 Emails 是 nil，`range` 不会 panic（迭代零次），直接返回 false。
+      en: Loop over `p.Emails` and use `strings.EqualFold(email, e)` for case-insensitive compare — `==` is case-sensitive, "ALICE@x.com" != "alice@x.com". If Emails is nil, `range` iterates zero times (no panic) and you return false.
